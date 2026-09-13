@@ -2,12 +2,18 @@ services:
   api:
     build: ./backend
     environment:
-      DOPPLER_TOKEN: ${DOPPLER_TOKEN:?set a Doppler service token for the prd config}
+      DOPPLER_TOKEN: ${DOPPLER_TOKEN:?set a Doppler service token for the config to deploy}
       DATA_DIR: /data
     volumes:
       - cinema-data:/data
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    depends_on:
+      - api
     ports:
-      - "8000:8000"
+      - "${WEB_PORT:-8080}:8080"
     restart: unless-stopped
 
 volumes:

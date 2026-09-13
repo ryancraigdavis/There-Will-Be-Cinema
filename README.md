@@ -8,7 +8,7 @@ club, and past the gate the aisles hold every film and series on the Emby server
 
 ```
 backend/   FastAPI + SQLite: syncs the Emby library, caches posters, builds texture atlases
-frontend/  React + React Three Fiber: the 3D store and the 2D search page (phase 1+)
+frontend/  React + Vite: home page, catalog search (/search), club redirect (/club); 3D store next
 artifacts/ source art (logo)
 ```
 
@@ -19,23 +19,41 @@ Secrets come from Doppler (`there_will_be_cinema` / `dev`). The repo is already 
 
 ```
 just api        # backend on :8000 (first run does a full Emby sync into backend/data/)
+just web        # frontend on :5173, proxies /api to :8000
 just sync full  # trigger a manual sync
-just test-api   # pytest
-just lint
+just test       # pytest + vitest
+just lint       # ruff + biome
 ```
 
 Without `just`:
 
 ```
 cd backend && doppler run -- uv run uvicorn --factory cinema.main:create_app --reload --port 8000
+cd frontend && npm install && npm run dev
 cd backend && uv run pytest
+cd frontend && npm test && npm run lint && npm run build
 ```
+
+Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
+
+## Production stack
+
+`docker compose` runs the API (with Doppler) and an nginx container that serves the built
+frontend and proxies `/api/` to it. Point the reverse proxy at port 8080.
+
+```
+DOPPLER_TOKEN=<service token> docker compose up --build -d   # http://localhost:8080
+docker compose down
+```
+
+`WEB_PORT` changes the published port. Library data lives in the `cinema-data` volume.
 
 ## API
 
 | Route | Purpose |
 |---|---|
 | `GET /api/health` | item count, last sync, whether a sync is running |
+| `GET /api/site` | public Emby URL, Emby server id, club URL |
 | `GET /api/catalog` | whole catalog, gzip + ETag |
 | `GET /api/collections` | Emby BoxSets with member ids |
 | `GET /api/posters/{id}.webp` | 400px poster |

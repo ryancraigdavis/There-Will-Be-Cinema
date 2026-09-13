@@ -1,0 +1,118 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(24px, 4vh, 44px);
+  min-height: 100vh;
+  padding: clamp(28px, 6vh, 64px) var(--gutter) 48px;
+}
+
+.home__hero {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+}
+
+.home__logo {
+  width: min(340px, 72vw);
+  height: auto;
+  filter: drop-shadow(0 18px 40px rgb(199 56 15 / 0.35)) drop-shadow(0 4px 10px rgb(0 0 0 / 0.6));
+}
+
+.marquee {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 11px 20px;
+  background: var(--ink);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 0 0 4px var(--rust),
+    0 0 28px rgb(252 204 12 / 0.22);
+}
+
+.marquee__label {
+  font: 500 12px / 1 var(--font-display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sunset);
+}
+
+.marquee__count {
+  font: 600 22px / 1 var(--font-display);
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.doors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 1040px;
+}
+
+.door {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 22px 22px 24px;
+  color: var(--cream);
+  text-decoration: none;
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--rust-bright);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.door:hover {
+  border-top-color: var(--gold);
+  box-shadow:
+    0 16px 32px rgb(0 0 0 / 0.45),
+    0 0 0 1px rgb(252 204 12 / 0.35);
+  transform: translateY(-3px);
+}
+
+.door__kicker {
+  font: 500 12px / 1 var(--font-display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sunset);
+}
+
+.door__title {
+  font: 600 30px / 1.05 var(--font-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.door__hint {
+  color: var(--text-muted);
+}
+
+.home__note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .door {
+    transition: none;
+  }
+
+  .door:hover {
+    transform: none;
+  }
+}

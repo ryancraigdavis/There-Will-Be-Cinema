@@ -29,13 +29,21 @@ def _is_admin(user: dict) -> bool:
 
 
 class EmbyClient:
-    def __init__(self, base_url: str, api_key: str, timeout: float = 60.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        timeout: float = 60.0,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self._http = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
             headers={"X-Emby-Token": api_key},
             timeout=timeout,
+            transport=transport,
         )
         self._user_id: str | None = None
+        self._server_id: str | None = None
 
     async def close(self) -> None:
         await self._http.aclose()
@@ -50,6 +58,17 @@ class EmbyClient:
         chosen = next((u for u in users if _is_admin(u)), users[0])
         self._user_id = self._user_id or str(chosen["Id"])
         return self._user_id
+
+    async def server_id(self) -> str | None:
+        self._server_id = self._server_id or await self._public_server_id()
+        return self._server_id
+
+    async def _public_server_id(self) -> str | None:
+        try:
+            info = await self._get_json("/System/Info/Public")
+        except httpx.HTTPError:
+            info = {}
+        return info.get("Id")
 
     async def _items_page(self, params: dict) -> dict:
         uid = await self.user_id()

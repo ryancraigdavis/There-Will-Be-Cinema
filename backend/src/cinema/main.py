@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from cinema.api.errors import register_exception_handlers
-from cinema.api.routes import admin, catalog, health
+from cinema.api.routes import admin, catalog, health, site
 from cinema.api.routes.static import mount_static
 from cinema.catalog.cache import CatalogCache
 from cinema.config import Settings, get_settings
@@ -28,6 +28,7 @@ def _lifespan(settings: Settings, client: EmbyClient | None):
             cache,
             runner,
         )
+        app.state.emby = emby
         task = runner.start()
         yield
         task.cancel()
@@ -58,4 +59,5 @@ def create_app(settings: Settings | None = None, client: EmbyClient | None = Non
     app.include_router(health.router, prefix="/api")
     app.include_router(catalog.router, prefix="/api")
     app.include_router(admin.router, prefix="/api")
+    app.include_router(site.router, prefix="/api")
     return app

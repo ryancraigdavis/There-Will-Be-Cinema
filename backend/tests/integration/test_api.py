@@ -50,3 +50,11 @@ def test_admin_sync_requires_token(api):
     ok = api.post("/api/admin/sync?mode=full", headers={"Authorization": "Bearer secret-token"})
     assert ok.status_code == 202
     assert ok.json()["status"] in {"queued", "already_running"}
+
+
+def test_site_info(api):
+    assert api.get("/api/site").json() == {
+        "emby_url": "http://emby.test",
+        "emby_server_id": "server-1",
+        "club_url": "https://criterion.therewillbecinema.com/movie-club",
+    }

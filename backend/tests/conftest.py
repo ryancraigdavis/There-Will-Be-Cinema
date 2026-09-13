@@ -31,6 +31,9 @@ class FakeEmby:
     async def close(self) -> None:
         return None
 
+    async def server_id(self) -> str | None:
+        return "server-1"
+
     async def iter_items(self, since: str | None = None, **_: object) -> AsyncIterator[dict]:
         self.since_calls.append(since)
         for item in self.items:
