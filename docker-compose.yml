@@ -1,0 +1,14 @@
+services:
+  api:
+    build: ./backend
+    environment:
+      DOPPLER_TOKEN: ${DOPPLER_TOKEN:?set a Doppler service token for the prd config}
+      DATA_DIR: /data
+    volumes:
+      - cinema-data:/data
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  cinema-data:

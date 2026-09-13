@@ -1,0 +1,45 @@
+[
+  {
+    "Id": "m1", "Type": "Movie", "Name": "There Will Be Blood", "SortName": "there will be blood",
+    "ProductionYear": 2007, "Overview": "Oil.", "RunTimeTicks": 94800000000,
+    "CommunityRating": 8.2, "OfficialRating": "R", "Genres": ["Drama", "History"],
+    "Tags": ["oil"], "ProviderIds": {"Imdb": "tt0469494", "Tmdb": "7345"},
+    "DateCreated": "2025-01-02T00:00:00.0000000Z", "DateLastSaved": "2025-01-03T00:00:00.0000000Z",
+    "ImageTags": {"Primary": "tag-m1"},
+    "MediaSources": [{
+      "Container": "mkv", "Size": 50000000000,
+      "MediaStreams": [
+        {"Type": "Video", "Codec": "hevc", "Width": 3840, "Height": 2160, "BitDepth": 10,
+         "VideoRange": "DolbyVision", "ExtendedVideoType": "DolbyVision",
+         "ExtendedVideoSubType": "DoviProfile76", "ColorTransfer": "smpte2084"},
+        {"Type": "Audio", "Codec": "truehd", "Title": "TrueHD with Dolby Atmos 7.1",
+         "Channels": 8, "ChannelLayout": "7.1", "IsDefault": true, "DisplayTitle": "English TRUEHD 7.1 (Default)"},
+        {"Type": "Audio", "Codec": "ac3", "Channels": 6, "ChannelLayout": "5.1"}
+      ]
+    }]
+  },
+  {
+    "Id": "m2", "Type": "Movie", "Name": "Clerks", "SortName": "clerks",
+    "ProductionYear": 1994, "Genres": ["Comedy"], "ProviderIds": {"Imdb": "tt0109445"},
+    "DateCreated": "2025-02-01T00:00:00.0000000Z", "ImageTags": {"Primary": "tag-m2"},
+    "RunTimeTicks": 55200000000,
+    "MediaSources": [{
+      "Container": "mkv",
+      "MediaStreams": [
+        {"Type": "Video", "Codec": "h264", "Width": 1920, "Height": 1080, "VideoRange": "SDR",
+         "ExtendedVideoType": "None", "ColorTransfer": "bt709"},
+        {"Type": "Audio", "Codec": "dts", "Profile": "DTS-HD MA", "Channels": 2, "ChannelLayout": "stereo"}
+      ]
+    }]
+  },
+  {
+    "Id": "m3", "Type": "Movie", "Name": "No Poster", "SortName": "no poster",
+    "ProductionYear": 1999, "Genres": [], "ImageTags": {},
+    "DateCreated": "2025-03-01T00:00:00.0000000Z", "MediaSources": []
+  },
+  {
+    "Id": "s1", "Type": "Series", "Name": "Twin Peaks", "SortName": "twin peaks",
+    "ProductionYear": 1990, "Genres": ["Mystery", "Drama"], "ChildCount": 30,
+    "DateCreated": "2025-04-01T00:00:00.0000000Z", "ImageTags": {"Primary": "tag-s1"}
+  }
+]

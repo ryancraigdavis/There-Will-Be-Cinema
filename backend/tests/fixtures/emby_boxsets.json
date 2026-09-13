@@ -1,0 +1,4 @@
+[
+  {"Id": "c1", "Name": "Staff Picks", "Overview": "Favourites", "ImageTags": {"Primary": "tag-c1"}, "children": ["m1", "m2"]},
+  {"Id": "c2", "Name": "Empty Set", "ImageTags": {}, "children": []}
+]
