@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { item } from '../test/fixtures'
-import { formatCount, formatRuntime, formatSeasons, metaLine } from './format'
+import { formatCount, formatRuntime, formatSeasons, metaLine, truncate } from './format'
 
 describe('format', () => {
   it.each([
@@ -30,5 +30,15 @@ describe('format', () => {
   it('pluralizes counts with separators', () => {
     expect(formatCount(3902, 'title')).toBe('3,902 titles')
     expect(formatCount(1, 'title')).toBe('1 title')
+  })
+})
+
+describe('truncate', () => {
+  it.each([
+    ['short text', 20, 'short text'],
+    ['cut at a word boundary please', 12, 'cut at a…'],
+    ['averyveryverylongword', 6, 'averyv…'],
+  ])('truncate(%s, %s)', (text, limit, expected) => {
+    expect(truncate(text, limit)).toBe(expected)
   })
 })

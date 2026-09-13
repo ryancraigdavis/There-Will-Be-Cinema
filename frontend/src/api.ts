@@ -1,4 +1,5 @@
 import type {
+  AtlasIndex,
   Catalog,
   CatalogItem,
   RawCatalog,
@@ -71,4 +72,12 @@ export function embyHomeUrl(site: SiteInfo): string {
 export function embyItemUrl(site: SiteInfo, itemId: string): string {
   const server = site.embyServerId ? `&serverId=${encodeURIComponent(site.embyServerId)}` : ''
   return `${embyHomeUrl(site)}#!/item?id=${encodeURIComponent(itemId)}${server}`
+}
+
+export async function fetchAtlasIndex(): Promise<AtlasIndex> {
+  return getJson<AtlasIndex>('/api/atlases/index.json')
+}
+
+export function atlasUrl(index: AtlasIndex, atlas: number): string {
+  return `${API_BASE}/api/atlases/${atlas}.webp?v=${index.version}`
 }

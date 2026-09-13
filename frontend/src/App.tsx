@@ -1,16 +1,36 @@
-import { Route, Routes } from 'react-router'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Route, Routes, useLocation } from 'react-router'
 import { ClubPage } from './pages/ClubPage'
-import { HomePage } from './pages/HomePage'
 import { NotFound } from './pages/NotFound'
 import { SearchPage } from './pages/SearchPage'
 
+const StorePage = lazy(() =>
+  import('./pages/StorePage').then((module) => ({ default: module.StorePage })),
+)
+
 export function App() {
+  const onStore = useLocation().pathname === '/'
+  const [visited, setVisited] = useState(onStore)
+
+  useEffect(() => {
+    if (onStore) {
+      setVisited(true)
+    }
+  }, [onStore])
+
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/search" element={<SearchPage />} />
-      <Route path="/club" element={<ClubPage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      {(visited || onStore) && (
+        <Suspense fallback={null}>
+          <StorePage active={onStore} />
+        </Suspense>
+      )}
+      <Routes>
+        <Route path="/" element={null} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/club" element={<ClubPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   )
 }

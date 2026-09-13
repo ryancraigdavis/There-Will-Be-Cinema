@@ -41,7 +41,7 @@ test: test-api test-web
 build:
     docker compose build
 
-# Run the production stack locally on :8080 using the repo's Doppler token
+# Run the production stack locally on :8765 using the repo's Doppler token
 up:
     DOPPLER_TOKEN=$(doppler configure get token --plain) docker compose up --build -d
 

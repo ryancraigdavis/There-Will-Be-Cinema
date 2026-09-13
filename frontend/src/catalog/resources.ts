@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchCatalog, fetchSite } from '../api'
+import { fetchAtlasIndex, fetchCatalog, fetchSite } from '../api'
 
 export type Resource<T> =
   | { status: 'loading' }
@@ -23,6 +23,7 @@ function describe(error: unknown): string {
 
 export const loadCatalog = cached(fetchCatalog)
 export const loadSite = cached(fetchSite)
+export const loadAtlasIndex = cached(fetchAtlasIndex)
 
 export function useResource<T>(load: () => Promise<T>): Resource<T> {
   const [state, setState] = useState<Resource<T>>({ status: 'loading' })
@@ -41,6 +42,7 @@ export function useResource<T>(load: () => Promise<T>): Resource<T> {
 
 export const useCatalog = () => useResource(loadCatalog)
 export const useSite = () => useResource(loadSite)
+export const useAtlasIndex = () => useResource(loadAtlasIndex)
 
 export function readyValue<T>(resource: Resource<T>): T | null {
   return resource.status === 'ready' ? resource.value : null

@@ -24,3 +24,9 @@ export function metaLine(item: CatalogItem): string {
 export function formatCount(count: number, noun: string): string {
   return `${count.toLocaleString('en-US')} ${noun}${count === 1 ? '' : 's'}`
 }
+
+export function truncate(text: string, limit: number): string {
+  const cut = text.slice(0, limit)
+  const boundary = cut.lastIndexOf(' ')
+  return text.length <= limit ? text : `${cut.slice(0, boundary > 0 ? boundary : limit).trimEnd()}…`
+}

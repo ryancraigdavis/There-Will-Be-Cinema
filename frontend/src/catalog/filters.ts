@@ -1,3 +1,4 @@
+import { titleCollator } from './collate'
 import type { Catalog, CatalogItem } from './types'
 
 export type TypeFilter = 'all' | 'Movie' | 'Series'
@@ -72,11 +73,7 @@ export function applyFilters(items: CatalogItem[], filters: Filters): CatalogIte
   return items.filter((item) => tests.every((test) => test(item)))
 }
 
-const collator = new Intl.Collator(undefined, {
-  sensitivity: 'base',
-  numeric: true,
-  ignorePunctuation: true,
-})
+const collator = titleCollator
 const byTitle: Comparator = (a, b) => collator.compare(a.sortTitle, b.sortTitle)
 
 const COMPARATORS: Record<Exclude<SortKey, 'relevance'>, Comparator> = {

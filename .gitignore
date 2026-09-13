@@ -22,3 +22,6 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# screenshots from tools/shoot.ts
+frontend/shots/

@@ -7,5 +7,6 @@ export default defineConfig({
   plugins: [react()],
   server: { port: 5173, proxy: API_PROXY },
   preview: { port: 4173, proxy: API_PROXY },
+  build: { chunkSizeWarningLimit: 1500 },
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
 })

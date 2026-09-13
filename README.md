@@ -8,7 +8,7 @@ club, and past the gate the aisles hold every film and series on the Emby server
 
 ```
 backend/   FastAPI + SQLite: syncs the Emby library, caches posters, builds texture atlases
-frontend/  React + Vite: home page, catalog search (/search), club redirect (/club); 3D store next
+frontend/  React + React Three Fiber: the 3D store (/), catalog search (/search), club redirect (/club)
 artifacts/ source art (logo)
 ```
 
@@ -36,17 +36,43 @@ cd frontend && npm test && npm run lint && npm run build
 
 Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
 
+## The store
+
+- **Walk in** from the intro. You start at the front counter.
+- **Lobby:** click the bulletin board, suggestion box, or telephone, or use the buttons along the
+  bottom. The camera pans to each one. Esc steps back.
+- **Enter the store** through the gate. Only the center aisle is stocked for now.
+- **Walking:** WASD or arrow keys, Shift to run, mouse to look. The browser locks the pointer; Esc
+  pauses. Without pointer lock, drag to look.
+- **Tapes:** hover for the title, click to pull one off the shelf, then Watch on Emby or put it back.
+
+Use the Docker stack's API from the dev server with `API_PROXY_TARGET=http://localhost:8765 npm run dev`.
+
+### Screenshot smoke tool
+
+`npm run shoot` drives the store in headless Chromium with software WebGL and saves PNGs to
+`frontend/shots/`. Steps run in order:
+
+```
+npm run shoot -- --nolock --click-text="Walk in" --await-mode=counter --shot=counter \
+  --click-text="Enter the store" --await-mode=free --key=KeyW:1500 --hover=300,280 --shot=aisle
+```
+
+Steps: `--click=x,y`, `--click-text=`, `--click-selector=`, `--hover=x,y`, `--key=Code:ms`,
+`--press=Key`, `--drag=x1,y1,x2,y2`, `--await-text=`, `--await-mode=`, `--wait=ms`, `--shot=name`.
+Pass `--nolock` to test hover and clicks, since headless pointer lock reports no mouse movement.
+
 ## Production stack
 
 `docker compose` runs the API (with Doppler) and an nginx container that serves the built
-frontend and proxies `/api/` to it. Point the reverse proxy at port 8080.
+frontend and proxies `/api/` to it. Point the reverse proxy at port 8765.
 
 ```
-DOPPLER_TOKEN=<service token> docker compose up --build -d   # http://localhost:8080
+DOPPLER_TOKEN=<service token> docker compose up --build -d   # http://localhost:8765
 docker compose down
 ```
 
-`WEB_PORT` changes the published port. Library data lives in the `cinema-data` volume.
+`WEB_PORT` changes the published port, and can live in a `.env` file next to the compose file. Library data lives in the `cinema-data` volume.
 
 ## API
 

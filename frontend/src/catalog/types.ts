@@ -75,3 +75,13 @@ export interface SiteInfo {
   embyServerId: string | null
   clubUrl: string
 }
+
+export interface AtlasIndex {
+  cell: [number, number]
+  size: number
+  cols: number
+  rows: number
+  version: string
+  count: number
+  slots: Record<string, [number, number, number]>
+}
