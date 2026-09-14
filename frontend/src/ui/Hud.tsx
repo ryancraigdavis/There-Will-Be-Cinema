@@ -9,7 +9,7 @@ import { useScene } from '../shell/sceneState'
 import { ExternalMark } from './icons'
 
 const LOBBY_HINTS: Partial<Record<RigMode, string>> = {
-  counter: 'Click something in the lobby, or head through the gate.',
+  counter: 'Drag to look around. Click something in the lobby, or head through the gate.',
   focus: 'Press Esc to step back to the counter.',
 }
 
@@ -18,7 +18,7 @@ const coarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? 
 function freeHint(selected: boolean, locked: boolean): string {
   const hints = [
     [selected, 'Walk away or press Esc to put the tape back.'],
-    [coarsePointer(), 'Drag to look around. Walking on touch screens is coming soon.'],
+    [coarsePointer(), 'Left stick to walk · Drag to look · Tap a tape'],
     [locked, 'WASD to walk · Shift to run · Click a tape · Esc to pause'],
     [true, 'WASD to walk · Drag to look · Click a tape · Esc to pause'],
   ] as const

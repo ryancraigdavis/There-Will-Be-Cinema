@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AtlasIndex } from '../catalog/types'
 import { cellOrigin, cellSize, groupSlotsByAtlas, NO_ATLAS } from './batches'
-import type { Slot } from './layout'
+import type { Slot } from './geometry'
 
 const index: AtlasIndex = {
   cell: [128, 192],

@@ -1,28 +1,47 @@
+import { useThree } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
-import type { AtlasIndex, Catalog, SiteInfo } from '../catalog/types'
+import type { AtlasIndex, Catalog, Collection, SiteInfo } from '../catalog/types'
 import { Lobby } from '../lobby/Lobby'
 import { PlayerRig } from '../player/PlayerRig'
 import { sceneColliders } from '../scene/colliders'
 import { Lights } from '../theme/Lights'
 import { BoxDetail } from './BoxDetail'
-import { RENDERED_AISLES } from './constants'
-import { Gondola, SectionSign } from './Gondola'
 import { buildStorePlan } from './layout'
 import { Room } from './Room'
-import { SectionBoxes } from './ShelfInstances'
+import { ShelfBoxes, type ShelfGroup } from './ShelfInstances'
+import { Shelving } from './Shelving'
+import { ShelfSign } from './Signs'
+import { StoreFixtures } from './StoreFixtures'
+
+const PHONE_ATLAS_SIZE = 2048
+const DESKTOP_ATLAS_SIZE = 4096
 
 interface Props {
   catalog: Catalog | null
+  collections: Collection[] | null
   site: SiteInfo | null
   atlasIndex: AtlasIndex | null
   active: boolean
 }
 
-export function StoreScene({ catalog, site, atlasIndex, active }: Props) {
-  const plan = useMemo(() => (catalog ? buildStorePlan(catalog.items) : null), [catalog])
+function useMaxAtlasSize(): number {
+  const gl = useThree((state) => state.gl)
+  return useMemo(() => {
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
+    const limit = coarse ? PHONE_ATLAS_SIZE : DESKTOP_ATLAS_SIZE
+    return Math.min(gl.capabilities.maxTextureSize, limit)
+  }, [gl])
+}
+
+export function StoreScene({ catalog, collections, site, atlasIndex, active }: Props) {
+  const maxAtlasSize = useMaxAtlasSize()
+  const plan = useMemo(
+    () => (catalog && collections ? buildStorePlan(catalog.items, collections) : null),
+    [catalog, collections],
+  )
   const colliders = useMemo(() => sceneColliders(plan), [plan])
-  const sections = useMemo(
-    () => plan?.sections.filter((section) => RENDERED_AISLES.includes(section.aisle)) ?? [],
+  const groups = useMemo<ShelfGroup[]>(
+    () => (plan?.sections ?? []).map(({ id, slots, center }) => ({ id, slots, center })),
     [plan],
   )
 
@@ -30,18 +49,23 @@ export function StoreScene({ catalog, site, atlasIndex, active }: Props) {
     <>
       <Lights />
       <Room />
-      {plan?.gondolas.map((frame) => (
-        <Gondola key={frame.index} frame={frame} />
-      ))}
+      {plan && <Shelving plan={plan} />}
       <Suspense fallback={null}>
         <Lobby site={site} />
-        {sections.map((section) => (
-          <SectionSign key={section.id} section={section} />
+        <StoreFixtures site={site} />
+        {plan?.signs.map((sign) => (
+          <ShelfSign key={sign.id} sign={sign} />
         ))}
       </Suspense>
       {catalog &&
-        sections.map((section) => (
-          <SectionBoxes key={section.id} section={section} catalog={catalog} index={atlasIndex} />
+        groups.map((group) => (
+          <ShelfBoxes
+            key={group.id}
+            group={group}
+            catalog={catalog}
+            index={atlasIndex}
+            maxAtlasSize={maxAtlasSize}
+          />
         ))}
       <Suspense fallback={null}>{catalog && <BoxDetail catalog={catalog} site={site} />}</Suspense>
       <PlayerRig colliders={colliders} active={active} />

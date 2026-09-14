@@ -49,3 +49,11 @@ async def test_failed_run_is_recorded(conn, fake_emby, data_dir, mocker):
     assert run["status"] == "error"
     assert "boom" in run["error"]
     assert repo.last_successful_sync(conn) is None
+
+
+async def test_missing_level_is_rebuilt(conn, fake_emby, data_dir):
+    await run_sync(conn, fake_emby, data_dir)
+    missing = atlas.level_path(data_dir, 0, 1024)
+    missing.unlink()
+    await run_sync(conn, fake_emby, data_dir)
+    assert missing.exists()

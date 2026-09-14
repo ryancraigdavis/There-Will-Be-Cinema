@@ -11,10 +11,17 @@ ATLAS_SIZE = 4096
 COLS = ATLAS_SIZE // CELL[0]
 ROWS = ATLAS_SIZE // CELL[1]
 PER_ATLAS = COLS * ROWS
+LEVELS = (1024, 2048, ATLAS_SIZE)
+INDEX_NAME = "index.json"
 
 
 def atlas_dir(data_dir: Path) -> Path:
     return data_dir / "atlases"
+
+
+def level_path(data_dir: Path, number: int, size: int) -> Path:
+    suffix = "" if size == ATLAS_SIZE else f"-{size}"
+    return atlas_dir(data_dir) / f"{number}{suffix}.webp"
 
 
 def atlas_version(slots: list[tuple[str, str]]) -> str:
@@ -32,6 +39,7 @@ def build_index(slots: list[tuple[str, str]]) -> dict:
     return {
         "cell": list(CELL),
         "size": ATLAS_SIZE,
+        "levels": list(LEVELS),
         "cols": COLS,
         "rows": ROWS,
         "version": atlas_version(slots),
@@ -39,9 +47,24 @@ def build_index(slots: list[tuple[str, str]]) -> dict:
     }
 
 
+def read_index(data_dir: Path) -> dict | None:
+    path = atlas_dir(data_dir) / INDEX_NAME
+    return json.loads(path.read_text()) if path.exists() else None
+
+
 def current_version(data_dir: Path) -> str | None:
-    path = atlas_dir(data_dir) / "index.json"
-    return json.loads(path.read_text())["version"] if path.exists() else None
+    index = read_index(data_dir)
+    return index["version"] if index else None
+
+
+def levels_complete(data_dir: Path) -> bool:
+    index = read_index(data_dir) or {}
+    expected = [
+        level_path(data_dir, number, size)
+        for number in range(index.get("count", 0))
+        for size in LEVELS
+    ]
+    return index.get("levels") == list(LEVELS) and all(path.exists() for path in expected)
 
 
 def _paste(sheet: Image.Image, thumb_path: Path, col: int, row: int) -> None:
@@ -49,12 +72,20 @@ def _paste(sheet: Image.Image, thumb_path: Path, col: int, row: int) -> None:
         sheet.paste(thumb.convert("RGB"), (col * CELL[0], row * CELL[1]))
 
 
+def _save_levels(sheet: Image.Image, data_dir: Path, number: int) -> None:
+    for size in LEVELS:
+        scaled = (
+            sheet if size == ATLAS_SIZE else sheet.resize((size, size), Image.Resampling.LANCZOS)
+        )
+        scaled.save(level_path(data_dir, number, size), "WEBP", quality=82)
+
+
 def _render_atlas(data_dir: Path, number: int, chunk: list[tuple[int, str]]) -> None:
     sheet = Image.new("RGB", (ATLAS_SIZE, ATLAS_SIZE), (8, 6, 6))
     for index, item_id in chunk:
         _, col, row = slot_position(index)
         _paste(sheet, thumb_dir(data_dir) / f"{item_id}.webp", col, row)
-    sheet.save(atlas_dir(data_dir) / f"{number}.webp", "WEBP", quality=82)
+    _save_levels(sheet, data_dir, number)
 
 
 def build_atlases(data_dir: Path, slots: list[tuple[str, str]]) -> dict:
@@ -64,5 +95,5 @@ def build_atlases(data_dir: Path, slots: list[tuple[str, str]]) -> dict:
     for number, chunk in enumerate(chunks):
         _render_atlas(data_dir, number, chunk)
     index = {**build_index(slots), "count": len(chunks)}
-    (atlas_dir(data_dir) / "index.json").write_text(json.dumps(index))
+    (atlas_dir(data_dir) / INDEX_NAME).write_text(json.dumps(index))
     return index

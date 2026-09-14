@@ -265,3 +265,44 @@
   color: var(--gold);
   font-variant-numeric: tabular-nums;
 }
+
+.stick {
+  position: absolute;
+  bottom: 92px;
+  left: 28px;
+  z-index: 2;
+  width: 128px;
+  height: 128px;
+  touch-action: none;
+  background: rgb(1 4 4 / 0.45);
+  border: 2px solid rgb(252 204 12 / 0.6);
+  border-radius: 50%;
+}
+
+.stick__knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  background: var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+}
+
+@media (max-width: 560px) {
+  .hud[data-mode="counter"] .hud__hint,
+  .hud[data-mode="focus"] .hud__hint {
+    display: none;
+  }
+
+  .lobby-menu {
+    bottom: 18px;
+  }
+
+  .hud[data-mode="counter"] .hud__label,
+  .hud[data-mode="focus"] .hud__label {
+    bottom: 136px;
+  }
+}

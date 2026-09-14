@@ -1,15 +1,19 @@
+import { normalizeGenres, shelfGenre } from './catalog/genres'
 import type {
   AtlasIndex,
   Catalog,
   CatalogItem,
+  Collection,
   RawCatalog,
   RawCatalogItem,
+  RawCollection,
   RawSite,
   SiteInfo,
 } from './catalog/types'
 import { API_BASE } from './config'
 
 export function toItem(raw: RawCatalogItem): CatalogItem {
+  const genres = normalizeGenres(raw.g)
   return {
     id: raw.id,
     type: raw.t,
@@ -19,8 +23,8 @@ export function toItem(raw: RawCatalogItem): CatalogItem {
     runtimeMin: raw.rt,
     rating: raw.cr,
     officialRating: raw.or,
-    genres: raw.g,
-    primaryGenre: raw.pg,
+    genres,
+    primaryGenre: shelfGenre(genres),
     addedAt: raw.dc,
     imageTag: raw.img,
     is4k: raw.k4,
@@ -57,6 +61,20 @@ export async function fetchCatalog(): Promise<Catalog> {
   return toCatalog(await getJson<RawCatalog>('/api/catalog'))
 }
 
+export function toCollection(raw: RawCollection): Collection {
+  return {
+    id: raw.id,
+    name: raw.name,
+    overview: raw.overview,
+    imageTag: raw.img,
+    itemIds: raw.items,
+  }
+}
+
+export async function fetchCollections(): Promise<Collection[]> {
+  return (await getJson<RawCollection[]>('/api/collections')).map(toCollection)
+}
+
 export async function fetchSite(): Promise<SiteInfo> {
   return toSite(await getJson<RawSite>('/api/site'))
 }
@@ -78,6 +96,7 @@ export async function fetchAtlasIndex(): Promise<AtlasIndex> {
   return getJson<AtlasIndex>('/api/atlases/index.json')
 }
 
-export function atlasUrl(index: AtlasIndex, atlas: number): string {
-  return `${API_BASE}/api/atlases/${atlas}.webp?v=${index.version}`
+export function atlasUrl(index: AtlasIndex, atlas: number, size = index.size): string {
+  const suffix = size === index.size ? '' : `-${size}`
+  return `${API_BASE}/api/atlases/${atlas}${suffix}.webp?v=${index.version}`
 }

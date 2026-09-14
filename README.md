@@ -38,13 +38,21 @@ Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
 
 ## The store
 
-- **Walk in** from the intro. You start at the front counter.
+- **Walk in** from the intro. You start at the front counter; drag to look around the lobby.
 - **Lobby:** click the bulletin board, suggestion box, or telephone, or use the buttons along the
-  bottom. The camera pans to each one. Esc steps back.
-- **Enter the store** through the gate. Only the center aisle is stocked for now.
+  bottom. The camera pans to each one. Esc steps back. The catalog kiosk opens the search page and
+  the New Releases sign opens Emby.
+- **Enter the store** through the gate. Every movie faces out, shelved by genre on four
+  double-sided 9-meter gondolas and along the lined walls. The right lobby wall holds the 160
+  most recently added movies, the back wall holds TV on DVD, and the gondola ends show your
+  biggest Emby collections. There is room for about 4,400 movies before titles stop fitting.
 - **Walking:** WASD or arrow keys, Shift to run, mouse to look. The browser locks the pointer; Esc
-  pauses. Without pointer lock, drag to look.
+  pauses. Without pointer lock, drag to look. On touch screens, use the left stick and drag to look.
 - **Tapes:** hover for the title, click to pull one off the shelf, then Watch on Emby or put it back.
+
+Posters come from texture atlases at three sizes (1024, 2048, 4096). Shelves far away use the
+small sheet and sharpen as you get close; phones stop at 2048. The backend regenerates any missing
+size during its next sync.
 
 Use the Docker stack's API from the dev server with `API_PROXY_TARGET=http://localhost:8765 npm run dev`.
 

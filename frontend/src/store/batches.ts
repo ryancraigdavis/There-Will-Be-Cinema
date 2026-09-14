@@ -1,5 +1,5 @@
 import type { AtlasIndex } from '../catalog/types'
-import type { Slot } from './layout'
+import type { Slot } from './geometry'
 
 export interface SlotBatch {
   atlas: number

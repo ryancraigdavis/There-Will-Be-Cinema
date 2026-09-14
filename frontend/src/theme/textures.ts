@@ -135,3 +135,22 @@ export function noteTexture(lines: readonly string[], seed: number) {
     })
   })
 }
+
+export const kioskTexture = cached(() =>
+  canvasTexture(320, 240, (ctx) => {
+    ctx.fillStyle = '#07090c'
+    ctx.fillRect(0, 0, 320, 240)
+    ctx.strokeStyle = PALETTE.gold
+    ctx.lineWidth = 4
+    ctx.strokeRect(10, 10, 300, 220)
+    ctx.fillStyle = PALETTE.sunset
+    ctx.font = 'bold 24px monospace'
+    ctx.fillText('SEARCH THE', 34, 62)
+    ctx.fillStyle = PALETTE.gold
+    ctx.font = 'bold 56px monospace'
+    ctx.fillText('CATALOG', 34, 124)
+    ctx.fillStyle = PALETTE.cream
+    ctx.font = '20px monospace'
+    ctx.fillText('> TOUCH TO START_', 34, 190)
+  }),
+)

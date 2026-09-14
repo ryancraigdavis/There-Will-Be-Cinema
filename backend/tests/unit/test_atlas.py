@@ -47,3 +47,43 @@ def test_build_atlases_writes_sheet_and_index(data_dir):
         assert sheet.getpixel((10, 10))[0] > 200
         assert sheet.getpixel((atlas.CELL[0] + 10, 10))[1] > 200
     assert atlas.current_version(data_dir) == index["version"]
+
+
+def _two_thumbs(data_dir):
+    thumb_dir(data_dir).mkdir(parents=True, exist_ok=True)
+    for item_id in ("m1", "m2"):
+        Image.new("RGB", atlas.CELL, (200, 40, 20)).save(
+            thumb_dir(data_dir) / f"{item_id}.webp", "WEBP"
+        )
+    return [("m1", "t1"), ("m2", "t2")]
+
+
+def test_build_writes_every_level(data_dir):
+    index = atlas.build_atlases(data_dir, _two_thumbs(data_dir))
+    assert index["levels"] == [1024, 2048, 4096]
+    for size in atlas.LEVELS:
+        with Image.open(atlas.level_path(data_dir, 0, size)) as sheet:
+            assert sheet.size == (size, size)
+    assert atlas.levels_complete(data_dir) is True
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        pytest.param(lambda d: atlas.level_path(d, 0, 2048).unlink(), id="missing-level-file"),
+        pytest.param(
+            lambda d: (atlas.atlas_dir(d) / "index.json").write_text(
+                json.dumps({"version": "old", "count": 1})
+            ),
+            id="legacy-index",
+        ),
+    ],
+)
+def test_levels_incomplete(data_dir, damage):
+    atlas.build_atlases(data_dir, _two_thumbs(data_dir))
+    damage(data_dir)
+    assert atlas.levels_complete(data_dir) is False
+
+
+def test_levels_incomplete_without_index(data_dir):
+    assert atlas.levels_complete(data_dir) is False

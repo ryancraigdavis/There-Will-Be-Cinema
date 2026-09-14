@@ -66,7 +66,7 @@ async def sync_posters(conn: sqlite3.Connection, client: EmbyClient, data_dir: P
 async def rebuild_atlases(conn: sqlite3.Connection, data_dir: Path) -> str:
     slots = [(r["id"], r["image_tag"]) for r in repo.poster_slots(conn)]
     version = atlas.atlas_version(slots)
-    stale = version != atlas.current_version(data_dir)
+    stale = version != atlas.current_version(data_dir) or not atlas.levels_complete(data_dir)
     await asyncio.to_thread(atlas.build_atlases, data_dir, slots) if stale else None
     return version
 

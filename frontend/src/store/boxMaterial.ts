@@ -1,5 +1,7 @@
-import { MeshLambertMaterial, type Texture, Vector2 } from 'three'
+import { MeshLambertMaterial, type Texture, Vector2, Vector3 } from 'three'
 import { BOX } from './constants'
+
+export const PULL_OUT = 0.05
 
 const VERTEX_HEAD = /* glsl */ `#include <common>
 attribute vec3 aCell;
@@ -7,6 +9,7 @@ attribute vec3 aSpine;
 uniform vec2 uCellSize;
 uniform float uSpineRatio;
 uniform float uHover;
+uniform vec3 uPull;
 varying vec2 vAtlasUv;
 varying float vTextured;
 varying vec3 vSpine;
@@ -22,6 +25,10 @@ vAtlasUv = aCell.xy + (faceUv * 0.98 + 0.01) * uCellSize;
 vTextured = max(isCover, isSpine) * aCell.z;
 vSpine = aSpine;
 vHover = 1.0 - step(0.5, abs(float(gl_InstanceID) - uHover));
+`
+
+const VERTEX_PULL = /* glsl */ `#include <begin_vertex>
+transformed += uPull * vHover;
 `
 
 const FRAGMENT_HEAD = /* glsl */ `#include <common>
@@ -49,6 +56,7 @@ export interface BoxUniforms {
   uCellSize: { value: Vector2 }
   uSpineRatio: { value: number }
   uHover: { value: number }
+  uPull: { value: Vector3 }
 }
 
 export function createBoxMaterial(cell: [number, number]): {
@@ -61,6 +69,7 @@ export function createBoxMaterial(cell: [number, number]): {
     uCellSize: { value: new Vector2(cell[0], cell[1]) },
     uSpineRatio: { value: BOX.spine / BOX.cover },
     uHover: { value: -1 },
+    uPull: { value: new Vector3(PULL_OUT, 0, 0) },
   }
   const material = new MeshLambertMaterial({ color: '#ffffff' })
   material.customProgramCacheKey = () => 'twbc-vhs-box'
@@ -69,6 +78,7 @@ export function createBoxMaterial(cell: [number, number]): {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', VERTEX_HEAD)
       .replace('#include <uv_vertex>', VERTEX_BODY)
+      .replace('#include <begin_vertex>', VERTEX_PULL)
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', FRAGMENT_HEAD)
       .replace('#include <color_fragment>', FRAGMENT_COLOR)

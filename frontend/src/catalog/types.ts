@@ -70,6 +70,22 @@ export interface Catalog {
   byId: Map<string, CatalogItem>
 }
 
+export interface RawCollection {
+  id: string
+  name: string
+  overview: string | null
+  img: string | null
+  items: string[]
+}
+
+export interface Collection {
+  id: string
+  name: string
+  overview: string | null
+  imageTag: string | null
+  itemIds: string[]
+}
+
 export interface SiteInfo {
   embyUrl: string
   embyServerId: string | null
@@ -83,5 +99,6 @@ export interface AtlasIndex {
   rows: number
   version: string
   count: number
+  levels?: number[]
   slots: Record<string, [number, number, number]>
 }

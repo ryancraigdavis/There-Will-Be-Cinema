@@ -12,6 +12,13 @@ export function Lights() {
         color="#ffd9a0"
       />
       <pointLight position={[0, 2.7, -4]} intensity={6} distance={10} decay={1.5} color="#fff0d8" />
+      <pointLight
+        position={[0, 2.7, -10]}
+        intensity={6}
+        distance={10}
+        decay={1.5}
+        color="#fff0d8"
+      />
     </>
   )
 }

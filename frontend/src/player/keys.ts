@@ -28,3 +28,22 @@ export function inputFromKeys(keys: ReadonlySet<string>): MoveInput {
 export function isRunKey(code: string): boolean {
   return RUN.includes(code)
 }
+
+export interface Stick {
+  x: number
+  y: number
+}
+
+export const CENTERED: Stick = { x: 0, y: 0 }
+const RUN_STICK = 0.95
+
+const clampUnit = (value: number) => Math.min(1, Math.max(-1, value))
+
+export function moveInput(keys: ReadonlySet<string>, stick: Stick = CENTERED): MoveInput {
+  const fromKeys = inputFromKeys(keys)
+  return {
+    forward: clampUnit(fromKeys.forward - stick.y),
+    strafe: clampUnit(fromKeys.strafe + stick.x),
+    run: fromKeys.run || Math.hypot(stick.x, stick.y) > RUN_STICK,
+  }
+}

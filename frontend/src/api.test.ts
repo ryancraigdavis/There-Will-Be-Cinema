@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { embyHomeUrl, embyItemUrl, posterUrl, toSite } from './api'
-import { catalogFixture } from './test/fixtures'
+import { atlasUrl, embyHomeUrl, embyItemUrl, posterUrl, toItem, toSite } from './api'
+import { catalogFixture, rawItem } from './test/fixtures'
 
 const site = toSite({
   emby_url: 'https://emby.example.com',
@@ -31,6 +31,26 @@ describe('api helpers', () => {
     expect(embyItemUrl({ ...site, embyServerId: null }, 'abc')).toBe(
       'https://emby.example.com/web/index.html#!/item?id=abc',
     )
+  })
+
+  it('cleans genres and picks a shelf genre', () => {
+    const item = toItem(rawItem({ g: ['TV Movie', 'Sci-Fi', 'Science Fiction'], pg: 'TV Movie' }))
+    expect(item.genres).toEqual(['TV Movie', 'Science Fiction'])
+    expect(item.primaryGenre).toBe('Science Fiction')
+  })
+
+  it('builds atlas urls per level', () => {
+    const index = {
+      cell: [128, 192] as [number, number],
+      size: 4096,
+      cols: 32,
+      rows: 21,
+      version: 'v9',
+      count: 1,
+      slots: {},
+    }
+    expect(atlasUrl(index, 2)).toBe('/api/atlases/2.webp?v=v9')
+    expect(atlasUrl(index, 2, 1024)).toBe('/api/atlases/2-1024.webp?v=v9')
   })
 
   it('versions poster urls by image tag', () => {

@@ -1,12 +1,19 @@
 import '../ui/store.css'
 import { useEffect, useMemo } from 'react'
-import { readyValue, useAtlasIndex, useCatalog, useSite } from '../catalog/resources'
+import {
+  readyValue,
+  useAtlasIndex,
+  useCatalog,
+  useCollections,
+  useSite,
+} from '../catalog/resources'
 import { releaseLock } from '../player/pointerLock'
 import { SceneShell } from '../shell/SceneShell'
 import { useScene } from '../shell/sceneState'
 import { StoreScene } from '../store/StoreScene'
 import { Hud } from '../ui/Hud'
 import { IntroOverlay, PauseOverlay } from '../ui/Overlays'
+import { TouchControls } from '../ui/TouchControls'
 
 declare global {
   interface Window {
@@ -26,6 +33,9 @@ export function StorePage({ active }: { active: boolean }) {
   const catalog = readyValue(useCatalog())
   const site = readyValue(useSite())
   const atlasIndex = readyValue(useAtlasIndex())
+  const collectionsResource = useCollections()
+  const collections =
+    collectionsResource.status === 'loading' ? null : (readyValue(collectionsResource) ?? [])
   const webgl = useMemo(supportsWebGL2, [])
 
   useEffect(() => {
@@ -47,6 +57,7 @@ export function StorePage({ active }: { active: boolean }) {
     if (!active) {
       releaseLock()
       const scene = useScene.getState()
+      scene.setHover(null)
       scene.setPaused(scene.mode === 'free')
     }
   }, [active])
@@ -56,12 +67,19 @@ export function StorePage({ active }: { active: boolean }) {
       {webgl && (
         <div className="store__canvas">
           <SceneShell active={active}>
-            <StoreScene catalog={catalog} site={site} atlasIndex={atlasIndex} active={active} />
+            <StoreScene
+              catalog={catalog}
+              collections={collections}
+              site={site}
+              atlasIndex={atlasIndex}
+              active={active}
+            />
           </SceneShell>
         </div>
       )}
       <Hud site={site} />
       <IntroOverlay catalog={catalog} site={site} webgl={webgl} />
+      <TouchControls />
       <PauseOverlay />
     </div>
   )

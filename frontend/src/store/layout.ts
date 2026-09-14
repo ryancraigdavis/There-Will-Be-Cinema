@@ -1,30 +1,11 @@
 import { titleCollator } from '../catalog/collate'
-import type { CatalogItem } from '../catalog/types'
+import type { CatalogItem, Collection } from '../catalog/types'
 import type { AABB } from '../player/collision'
-import type { Vec3 } from '../scene/math'
-import { BOX, GONDOLA, MIN_GENRE_SIZE, OTHER_GENRE, SHELF } from './constants'
-
-export interface Slot {
-  itemId: string
-  position: Vec3
-  yaw: number
-}
-
-export interface SectionSign {
-  label: string
-  position: Vec3
-  yaw: number
-}
-
-export interface Section {
-  id: string
-  aisle: number
-  face: number
-  index: number
-  genres: string[]
-  slots: Slot[]
-  sign: SectionSign
-}
+import { GONDOLA, MIN_GENRE_SIZE, OTHER_GENRE, SIGN_SIZE } from './constants'
+import { buildDisplays } from './displays'
+import { fillRows, rowSlots, type ShelfSection, sectionSigns, sectionsFrom } from './fill'
+import { BACK_Z, type Sign } from './geometry'
+import { GENRE_RUNS, type RunSpec, runCollider } from './runs'
 
 export interface GondolaFrame {
   index: number
@@ -38,38 +19,14 @@ export interface GenreGroup {
   items: CatalogItem[]
 }
 
-export interface ShelfRow {
-  genre: string
-  itemIds: string[]
-}
-
-export interface FaceSpec {
-  aisle: number
-  gondola: number
-  side: 1 | -1
-}
-
 export interface StorePlan {
-  sections: Section[]
+  runs: RunSpec[]
+  sections: ShelfSection[]
+  signs: Sign[]
   gondolas: GondolaFrame[]
   colliders: AABB[]
   overflow: string[]
 }
-
-export const FACES: readonly FaceSpec[] = [
-  { aisle: 0, gondola: 1, side: 1 },
-  { aisle: 0, gondola: 2, side: -1 },
-  { aisle: 1, gondola: 0, side: 1 },
-  { aisle: 1, gondola: 1, side: -1 },
-  { aisle: 2, gondola: 2, side: 1 },
-  { aisle: 2, gondola: 3, side: -1 },
-  { aisle: 3, gondola: 0, side: -1 },
-  { aisle: 4, gondola: 3, side: 1 },
-]
-
-export const ROWS_PER_FACE = GONDOLA.sections * SHELF.rows
-export const BACK_Z = GONDOLA.frontZ - GONDOLA.sections * GONDOLA.sectionLength
-export const FACE_OFFSET = GONDOLA.divider / 2 + SHELF.depth
 
 function countBy<T>(values: readonly T[], key: (value: T) => string): Map<string, number> {
   const counts = new Map<string, number>()
@@ -105,110 +62,24 @@ export function groupByGenre(
     .sort(byShelfOrder)
 }
 
-function chunk<T>(values: readonly T[], size: number): T[][] {
-  return Array.from({ length: Math.ceil(values.length / size) }, (_, i) =>
-    values.slice(i * size, (i + 1) * size),
-  )
-}
-
-export function toRows(groups: readonly GenreGroup[]): ShelfRow[] {
-  return groups.flatMap((group) =>
-    chunk(group.items, SHELF.slots).map((items) => ({
-      genre: group.genre,
-      itemIds: items.map((item) => item.id),
-    })),
-  )
-}
-
-export function addressOf(row: number): { face: number; section: number; shelf: number } {
-  const withinFace = row % ROWS_PER_FACE
+export function buildStorePlan(
+  items: readonly CatalogItem[],
+  collections: readonly Collection[] = [],
+): StorePlan {
+  const movies = items.filter((item) => item.type === 'Movie')
+  const groups = groupByGenre(movies).map((group) => ({
+    label: group.genre,
+    itemIds: group.items.map((item) => item.id),
+  }))
+  const { placements, overflow } = fillRows(groups, rowSlots(GENRE_RUNS))
+  const displays = buildDisplays(items, collections)
+  const runs = [...GENRE_RUNS, ...displays.runs]
   return {
-    face: Math.floor(row / ROWS_PER_FACE),
-    section: Math.floor(withinFace / SHELF.rows),
-    shelf: withinFace % SHELF.rows,
-  }
-}
-
-function faceGeometry(spec: FaceSpec) {
-  return {
-    x: GONDOLA.xs[spec.gondola] ?? 0,
-    startZ: spec.side > 0 ? GONDOLA.frontZ : BACK_Z,
-    dir: -spec.side,
-    yaw: (spec.side * Math.PI) / 2,
-  }
-}
-
-export function shelfTop(shelf: number): number {
-  return SHELF.topY - shelf * SHELF.rowGap
-}
-
-export function slotPosition(spec: FaceSpec, section: number, shelf: number, index: number): Vec3 {
-  const face = faceGeometry(spec)
-  const along =
-    section * GONDOLA.sectionLength + SHELF.margin + SHELF.pitch / 2 + index * SHELF.pitch
-  return [
-    face.x + spec.side * (FACE_OFFSET - SHELF.inset - BOX.cover / 2),
-    shelfTop(shelf) + BOX.height / 2,
-    face.startZ + face.dir * along,
-  ]
-}
-
-function signFor(spec: FaceSpec, section: number, genres: readonly string[]): SectionSign {
-  const face = faceGeometry(spec)
-  return {
-    label: genres.join(' · '),
-    position: [
-      face.x + spec.side * (FACE_OFFSET + 0.006),
-      GONDOLA.signY,
-      face.startZ + face.dir * (section + 0.5) * GONDOLA.sectionLength,
-    ],
-    yaw: face.yaw,
-  }
-}
-
-function buildSections(rows: readonly ShelfRow[]): Section[] {
-  const sections = new Map<string, Section>()
-  rows.forEach((row, rowIndex) => {
-    const { face, section, shelf } = addressOf(rowIndex)
-    const spec = FACES[face] as FaceSpec
-    const id = `${face}-${section}`
-    const entry: Section = sections.get(id) ?? {
-      id,
-      aisle: spec.aisle,
-      face,
-      index: section,
-      genres: [],
-      slots: [],
-      sign: signFor(spec, section, []),
-    }
-    const genres = entry.genres.includes(row.genre) ? entry.genres : [...entry.genres, row.genre]
-    const yaw = faceGeometry(spec).yaw
-    const slots = row.itemIds.map((itemId, i) => ({
-      itemId,
-      position: slotPosition(spec, section, shelf, i),
-      yaw,
-    }))
-    sections.set(id, {
-      ...entry,
-      genres,
-      slots: [...entry.slots, ...slots],
-      sign: signFor(spec, section, genres),
-    })
-  })
-  return [...sections.values()]
-}
-
-export function gondolaCollider(x: number): AABB {
-  return { minX: x - FACE_OFFSET, maxX: x + FACE_OFFSET, minZ: BACK_Z, maxZ: GONDOLA.frontZ }
-}
-
-export function buildStorePlan(items: readonly CatalogItem[]): StorePlan {
-  const rows = toRows(groupByGenre(items.filter((item) => item.type === 'Movie')))
-  const capacity = FACES.length * ROWS_PER_FACE
-  return {
-    sections: buildSections(rows.slice(0, capacity)),
+    runs,
+    sections: [...sectionsFrom(placements), ...displays.sections],
+    signs: [...sectionSigns(placements, SIGN_SIZE.section), ...displays.signs],
     gondolas: GONDOLA.xs.map((x, index) => ({ index, x, frontZ: GONDOLA.frontZ, backZ: BACK_Z })),
-    colliders: GONDOLA.xs.map(gondolaCollider),
-    overflow: rows.slice(capacity).flatMap((row) => row.itemIds),
+    colliders: runs.map(runCollider),
+    overflow: [...overflow, ...displays.overflow],
   }
 }

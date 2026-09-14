@@ -7,10 +7,14 @@ declare global {
   interface Window {
     __sceneReady?: boolean
     __rendererInfo?: string
+    __renderStats?: Record<string, number>
   }
 }
 
 type EventStore = Parameters<typeof pointerEvents>[0]
+
+const COARSE = window.matchMedia?.('(pointer: coarse)').matches ?? false
+const MAX_DPR = COARSE ? 1.5 : 1.75
 
 function lockAwareEvents(store: EventStore) {
   return {
@@ -43,22 +47,39 @@ function ReadySignal() {
   return null
 }
 
+function StatsSignal() {
+  const frames = useRef(0)
+  useFrame(({ gl }) => {
+    frames.current = (frames.current + 1) % 30
+    if (frames.current === 0) {
+      window.__renderStats = {
+        calls: gl.info.render.calls,
+        triangles: gl.info.render.triangles,
+        textures: gl.info.memory.textures,
+        geometries: gl.info.memory.geometries,
+      }
+    }
+  })
+  return null
+}
+
 export function SceneShell({ active, children }: { active: boolean; children: ReactNode }) {
   const setCanvas = useScene((state) => state.setCanvas)
   return (
     <Canvas
       frameloop={active ? 'always' : 'never'}
-      dpr={[1, 1.75]}
+      dpr={[1, MAX_DPR]}
       flat
       gl={{ antialias: true, powerPreference: 'high-performance' }}
-      camera={{ fov: 62, near: 0.05, far: 60, position: [...ANCHORS.counter.position] }}
+      camera={{ fov: 70, near: 0.05, far: 60, position: [...ANCHORS.counter.position] }}
       events={lockAwareEvents}
       onCreated={({ gl }) => setCanvas(gl.domElement)}
     >
       <color attach="background" args={['#0c0504']} />
-      <fog attach="fog" args={['#120705', 14, 32]} />
+      <fog attach="fog" args={['#120705', 16, 40]} />
       {children}
       <ReadySignal />
+      <StatsSignal />
     </Canvas>
   )
 }

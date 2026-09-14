@@ -46,7 +46,13 @@
   },
   "overrides": [
     {
-      "includes": ["src/lobby/**", "src/store/**", "src/ui3d/**", "src/shell/**"],
+      "includes": [
+        "src/lobby/**",
+        "src/store/**",
+        "src/ui3d/**",
+        "src/shell/**",
+        "src/ui/TouchControls.tsx"
+      ],
       "linter": {
         "rules": {
           "a11y": {

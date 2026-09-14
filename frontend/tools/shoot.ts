@@ -49,6 +49,20 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     page.waitForFunction((t) => document.body.innerText.includes(t), value, { timeout: 30_000 }),
   'await-mode': (page, value) =>
     page.waitForFunction((m) => window.__scene?.mode === m, value, { timeout: 30_000 }),
+  'await-path': (page, value) =>
+    page.waitForFunction((path) => location.pathname === path, value, { timeout: 30_000 }),
+  'steady-hover': async (page, value) => {
+    const [x = 640, y = 360, count = 10] = value.split(',').map(Number)
+    const samples: unknown[] = []
+    for (let i = 0; i < count; i++) {
+      await page.mouse.move(x + (i % 2), y)
+      await page.waitForTimeout(150)
+      samples.push(await page.evaluate(() => window.__scene?.hoverLabel ?? null))
+    }
+    const steady = samples.every((label) => label !== null && label === samples[0])
+    console.log(`hover samples ${steady ? 'steady' : 'UNSTEADY'}: ${JSON.stringify(samples)}`)
+    process.exitCode = steady ? process.exitCode : 1
+  },
   wait: (page, value) => page.waitForTimeout(Number(value)),
   shot: async (page, value) => {
     await settle(page)
@@ -67,7 +81,13 @@ const browser = await chromium.launch({
     '--hide-scrollbars',
   ],
 })
-const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 })
+const mobile = process.argv.includes('--mobile')
+const page = await browser.newPage({
+  viewport: { width, height },
+  deviceScaleFactor: 1,
+  hasTouch: mobile,
+  isMobile: mobile,
+})
 const errors: string[] = []
 page.on('console', (m) => {
   if (m.type() === 'error' || m.type() === 'warning') errors.push(`${m.type()}: ${m.text()}`)
@@ -92,7 +112,8 @@ try {
   }
   const scene = await page.evaluate(() => window.__scene)
   const renderer = await page.evaluate(() => window.__rendererInfo)
-  console.log(`scene: ${JSON.stringify(scene)}\nGL: ${renderer}`)
+  const stats = await page.evaluate(() => window.__renderStats)
+  console.log(`scene: ${JSON.stringify(scene)}\nstats: ${JSON.stringify(stats)}\nGL: ${renderer}`)
 } catch (err) {
   process.exitCode = 1
   console.error(`✗ ${(err as Error).message}`)
@@ -108,5 +129,6 @@ declare global {
     __sceneReady?: boolean
     __rendererInfo?: string
     __scene?: Record<string, unknown>
+    __renderStats?: Record<string, number>
   }
 }

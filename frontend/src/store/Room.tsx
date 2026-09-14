@@ -9,7 +9,7 @@ const DEPTH = ROOM.maxZ - ROOM.minZ
 const CENTER_X = (ROOM.maxX + ROOM.minX) / 2
 const CENTER_Z = (ROOM.maxZ + ROOM.minZ) / 2
 const TROFFER_XS = [-4.5, -1.5, 1.5, 4.5]
-const TROFFER_ZS = [-7, -4, -1, 2, 5]
+const TROFFER_ZS = [-12, -9, -6, -3, 0, 3, 6]
 
 const WALLS = [
   { key: 'left', x: ROOM.minX - THICKNESS / 2, z: CENTER_Z, length: DEPTH, yaw: Math.PI / 2 },
