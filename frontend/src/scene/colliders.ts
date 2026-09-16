@@ -1,4 +1,4 @@
-import { BULLETIN, COUNTER, GATE, KIOSK } from '../lobby/anchors'
+import { BULLETIN, COUNTER, DERRICK, GATE, GUMBALL, KIOSK, POPCORN } from '../lobby/anchors'
 import { DIRECTORY } from '../lobby/Directory'
 import type { AABB } from '../player/collision'
 import { ROOM } from '../store/constants'
@@ -43,6 +43,14 @@ export const LOBBY_COLLIDERS: readonly AABB[] = [
   },
 ]
 
+const around = (spot: { x: number; z: number; half: number }): AABB => ({
+  minX: spot.x - spot.half,
+  maxX: spot.x + spot.half,
+  minZ: spot.z - spot.half,
+  maxZ: spot.z + spot.half,
+})
+
 export function sceneColliders(plan: StorePlan | null): AABB[] {
-  return [...roomWalls(), ...LOBBY_COLLIDERS, ...(plan?.colliders ?? [])]
+  const props = [POPCORN, GUMBALL, DERRICK].map(around)
+  return [...roomWalls(), ...LOBBY_COLLIDERS, ...props, ...(plan?.colliders ?? [])]
 }

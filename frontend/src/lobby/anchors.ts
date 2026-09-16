@@ -9,6 +9,9 @@ export const FIXTURE_IDS: readonly FixtureId[] = ['bulletin', 'suggestion', 'tel
 
 export const COUNTER = { minX: 0.9, maxX: 4.1, minZ: 2.2, maxZ: 3, height: 1.05 } as const
 export const GATE = { x: 0, z: 2.6, halfWidth: 0.7, postRadius: 0.07, height: 2.35 } as const
+export const POPCORN = { x: 4.75, z: 4.45, yaw: -1.12, half: 0.45 } as const
+export const GUMBALL = { x: 0.72, z: 3.4, yaw: -0.05, half: 0.28 } as const
+export const DERRICK = { x: -5.5, z: 6.5, yaw: 0.4, half: 0.85 } as const
 export const KIOSK = { x: -2.35, z: 1.25, yaw: 0.5, half: 0.3 } as const
 export const BULLETIN = { x: -1.6, z: 3.9, y: 1.45, yaw: 0.72, halfFootprint: 0.4 } as const
 

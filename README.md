@@ -9,7 +9,7 @@ club, and past the gate the aisles hold every film and series on the Emby server
 ```
 backend/   FastAPI + SQLite: syncs the Emby library, caches posters, builds texture atlases
 frontend/  React + React Three Fiber: the 3D store (/), catalog search (/search), club redirect (/club)
-artifacts/ source art (logo)
+artifacts/ source art (logo, framed store art)
 ```
 
 ## Running locally
@@ -42,6 +42,11 @@ Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
 - **Lobby:** click the bulletin board, suggestion box, or telephone, or use the buttons along the
   bottom. The camera pans to each one. Esc steps back. The catalog kiosk opens the search page and
   the New Releases sign opens Emby.
+- **Props:** the popcorn machine pops a batch when you click it and the gumball machine turns its
+  crank and drops a gumball into the tray; neither one leads anywhere. An oil derrick stands in the
+  left corner of the lobby, the There Will Be Blood poster and a Paul Thomas Anderson portrait hang
+  by New Releases, and two oilfield paintings flank a lit THERE WILL BE CINEMA sign on the back wall
+  of the store.
 - **Finding things:** a directory by the gate lists every genre and its aisle, banners hang over
   each aisle naming what is down it, each 1-meter bay is signed with its genre and letter range
   ("Drama A–B"), and letter tabs stand between tapes on the shelf.
@@ -73,8 +78,11 @@ npm run shoot -- --nolock --click-text="Walk in" --await-mode=counter --shot=cou
 ```
 
 Steps: `--click=x,y`, `--click-text=`, `--click-selector=`, `--hover=x,y`, `--key=Code:ms`,
-`--press=Key`, `--drag=x1,y1,x2,y2`, `--await-text=`, `--await-mode=`, `--wait=ms`, `--shot=name`.
-Pass `--nolock` to test hover and clicks, since headless pointer lock reports no mouse movement.
+`--press=Key`, `--drag=x1,y1,x2,y2`, `--await-text=`, `--await-mode=`, `--await-path=`, `--goto=`,
+`--wait=ms`, `--shot=name`, `--flash=name`, `--steady-hover=x,y,n`, `--pick-report`, `--count=name`.
+Pass `--nolock` to test hover and clicks, since headless pointer lock reports no mouse movement, and
+`--mobile` with `--width`/`--height` for the touch layout. `--shot` settles 30 frames first, which
+takes seconds under software WebGL, so catch animations mid-flight with `--flash` instead.
 
 ## Production stack
 

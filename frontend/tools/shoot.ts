@@ -107,6 +107,11 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     console.log(`${value}: ${report}`)
   },
   wait: (page, value) => page.waitForTimeout(Number(value)),
+  flash: async (page, value) => {
+    await mkdir(SHOTS, { recursive: true })
+    await page.screenshot({ path: resolve(SHOTS, `${value}.png`) })
+    console.log(`✓ shots/${value}.png (no settle)`)
+  },
   shot: async (page, value) => {
     await settle(page)
     await mkdir(SHOTS, { recursive: true })

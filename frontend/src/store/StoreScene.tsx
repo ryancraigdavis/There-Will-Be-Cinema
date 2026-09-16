@@ -5,6 +5,7 @@ import { Directory } from '../lobby/Directory'
 import { Lobby } from '../lobby/Lobby'
 import { PlayerRig } from '../player/PlayerRig'
 import { sceneColliders } from '../scene/colliders'
+import { Decor } from '../scene/Decor'
 import { Lights } from '../theme/Lights'
 import { Banners } from './Banners'
 import { BoxDetail } from './BoxDetail'
@@ -56,6 +57,7 @@ export function StoreScene({ catalog, collections, site, atlasIndex, active }: P
       {plan && <Dividers dividers={plan.dividers} />}
       <Suspense fallback={null}>
         <Lobby site={site} />
+        <Decor />
         {plan && <Directory entries={plan.directory} />}
         {plan && <Banners banners={plan.banners} />}
         <StoreFixtures site={site} />

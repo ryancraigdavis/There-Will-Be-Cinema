@@ -6,6 +6,7 @@ import { Button3D } from '../ui3d/Button3D'
 import { Card3D, cardLayout } from '../ui3d/Card3D'
 import { BULLETIN, FIXTURE_IDS, FIXTURE_LABELS, FIXTURES, type FixtureId, GATE } from './anchors'
 import { CARDS } from './cards'
+import { Derrick } from './Derrick'
 import {
   BulletinBoard,
   Counter,
@@ -16,6 +17,7 @@ import {
   Telephone,
 } from './Fixtures'
 import { type Glow, Hotspot } from './Hotspot'
+import { Machines } from './Machines'
 
 const MODELS: Record<FixtureId, ComponentType> = {
   bulletin: BulletinBoard,
@@ -94,6 +96,8 @@ export function Lobby({ site }: { site: SiteInfo | null }) {
       <Counter />
       <CounterGear />
       <HangingLogo />
+      <Derrick />
+      <Machines active={!paused && mode !== 'intro' && mode !== 'entering'} />
       {FIXTURE_IDS.map((id) => {
         const Model = MODELS[id]
         return (
