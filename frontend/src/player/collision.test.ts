@@ -27,6 +27,13 @@ describe('collision', () => {
     })
   })
 
+  it('walks a trapped player out instead of freezing them', () => {
+    expect(moveCircle({ x: 1.5, z: 0 }, { x: -0.2, z: 0.1 }, 0.3, [wall])).toEqual({
+      x: 1.3,
+      z: 0.1,
+    })
+  })
+
   it('detects overlapping boxes', () => {
     expect(boxesOverlap(wall, { minX: 1.5, maxX: 3, minZ: 0, maxZ: 1 })).toBe(true)
     expect(boxesOverlap(wall, { minX: 2, maxX: 3, minZ: 0, maxZ: 1 })).toBe(false)

@@ -22,16 +22,19 @@ export function isBlocked(center: PointXZ, radius: number, boxes: readonly AABB[
   return boxes.some((box) => overlapsCircle(center, radius, box))
 }
 
+const NOTHING: readonly AABB[] = []
+
 export function moveCircle(
   from: PointXZ,
   delta: PointXZ,
   radius: number,
   boxes: readonly AABB[],
 ): PointXZ {
+  const walls = isBlocked(from, radius, boxes) ? NOTHING : boxes
   const stepX = { x: from.x + delta.x, z: from.z }
-  const x = isBlocked(stepX, radius, boxes) ? from.x : stepX.x
+  const x = isBlocked(stepX, radius, walls) ? from.x : stepX.x
   const stepZ = { x, z: from.z + delta.z }
-  return { x, z: isBlocked(stepZ, radius, boxes) ? from.z : stepZ.z }
+  return { x, z: isBlocked(stepZ, radius, walls) ? from.z : stepZ.z }
 }
 
 export function boxesOverlap(a: AABB, b: AABB): boolean {
