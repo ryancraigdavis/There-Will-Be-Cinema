@@ -81,6 +81,13 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     console.log(`pick: ${report}`)
   },
   goto: (page, value) => page.goto(new URL(value, url).toString()),
+  fill: (page, value) => {
+    const split = value.lastIndexOf('::')
+    return page
+      .locator(value.slice(0, split))
+      .first()
+      .fill(value.slice(split + 2))
+  },
   cookie: (page, value) => {
     const [name = '', ...rest] = value.split('=')
     return page.context().addCookies([{ name, value: rest.join('='), url }])

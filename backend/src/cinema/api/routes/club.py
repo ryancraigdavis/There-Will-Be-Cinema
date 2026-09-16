@@ -1,18 +1,20 @@
 import time
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from cinema.api.deps import (
     client_address,
-    require_admin,
+    conn_of,
     require_same_site,
     session_of,
     settings_of,
     throttle_of,
 )
-from cinema.club import sessions
+from cinema.club import events, sessions
 from cinema.club.throttle import TooManyAttempts
+from cinema.db import club_repo
 from cinema.emby.auth import EmbyUnavailable, InvalidLogin
 from cinema.emby.models import EmbyUser
 
@@ -88,7 +90,13 @@ async def me(request: Request) -> dict:
     return _describe(request, session_of(request))
 
 
-@router.get("/club/admin/overview")
-async def admin_overview(request: Request) -> dict:
-    session = require_admin(request)
-    return {"name": session.name}
+@router.get("/club/next")
+async def next_screening(request: Request) -> dict:
+    rows = club_repo.upcoming_events(conn_of(request), events.cutoff(datetime.now(UTC)), 1)
+    return {"screening": next((events.public(row) for row in rows), None)}
+
+
+@router.get("/club/schedule")
+async def schedule(request: Request, limit: int = Query(default=4, ge=1, le=12)) -> dict:
+    rows = club_repo.upcoming_events(conn_of(request), events.cutoff(datetime.now(UTC)), limit)
+    return {"screenings": [events.public(row) for row in rows]}

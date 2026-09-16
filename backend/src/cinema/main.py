@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from cinema.api.errors import register_exception_handlers
-from cinema.api.routes import admin, catalog, club, health, site
+from cinema.api.routes import admin, catalog, club, club_admin, health, site
 from cinema.api.routes.static import mount_static
 from cinema.catalog.cache import CatalogCache
 from cinema.club.throttle import LoginThrottle
@@ -63,4 +63,5 @@ def create_app(settings: Settings | None = None, client: EmbyClient | None = Non
     app.include_router(admin.router, prefix="/api")
     app.include_router(site.router, prefix="/api")
     app.include_router(club.router, prefix="/api")
+    app.include_router(club_admin.router, prefix="/api")
     return app

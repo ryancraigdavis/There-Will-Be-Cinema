@@ -177,6 +177,17 @@
   filter: drop-shadow(0 18px 40px rgb(199 56 15 / 0.35)) drop-shadow(0 4px 10px rgb(0 0 0 / 0.6));
 }
 
+.intro__panel--screening {
+  gap: 16px;
+  width: min(760px, 100%);
+}
+
+.intro__logo--small {
+  width: 72px;
+  height: 72px;
+  filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.6));
+}
+
 .intro__enter {
   padding: 16px 44px;
   font-size: 18px;

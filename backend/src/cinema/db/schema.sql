@@ -68,3 +68,20 @@ CREATE TABLE IF NOT EXISTS sync_runs (
     status TEXT NOT NULL,
     error TEXT
 );
+
+CREATE TABLE IF NOT EXISTS club_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id TEXT,
+    title TEXT NOT NULL,
+    year INTEGER,
+    art_url TEXT,
+    art_version TEXT,
+    message TEXT,
+    description TEXT,
+    starts_at TEXT NOT NULL,
+    location TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_club_events_when ON club_events (status, starts_at);

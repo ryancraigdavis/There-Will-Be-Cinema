@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Route, Routes, useLocation } from 'react-router'
+import { useScreenings } from './club/screenings'
 import { useClubSession } from './club/session'
 import { AdminPage } from './pages/AdminPage'
 import { ClubPage } from './pages/ClubPage'
@@ -16,6 +17,7 @@ export function App() {
 
   useEffect(() => {
     void useClubSession.getState().refresh()
+    void useScreenings.getState().refresh()
   }, [])
 
   useEffect(() => {

@@ -85,7 +85,8 @@ npm run shoot -- --nolock --click-text="Walk in" --await-mode=counter --shot=cou
 Steps: `--click=x,y`, `--click-text=`, `--click-selector=`, `--hover=x,y`, `--key=Code:ms`,
 `--press=Key`, `--drag=x1,y1,x2,y2`, `--await-text=`, `--await-mode=`, `--await-path=`, `--goto=`,
 `--wait=ms`, `--shot=name`, `--flash=name`, `--steady-hover=x,y,n`, `--pick-report`, `--count=name`,
-`--cookie=name=value` (follow it with `--goto=` so the page reloads with the cookie).
+`--cookie=name=value` (follow it with `--goto=` so the page reloads with the cookie),
+`--fill=selector::value` (Playwright locator, value after the last `::`).
 Pass `--nolock` to test hover and clicks, since headless pointer lock reports no mouse movement, and
 `--mobile` with `--width`/`--height` for the touch layout. `--shot` settles 30 frames first, which
 takes seconds under software WebGL, so catch animations mid-flight with `--flash` instead.
@@ -103,6 +104,15 @@ The club is moving in from the old Canva page in stages (see the plan's Phase 5)
 - Sign-in stays switched off until `SESSION_SECRET` is set. Changing that secret signs everyone out.
 - Eight wrong passwords in ten minutes, from one address or for one username, lock sign-in for a
   while.
+- **Screenings:** admins add them on the dashboard. Search the library and the poster, year and
+  synopsis fill themselves in, or switch to *Not in the library* and type the title, year and a
+  poster image address (the site downloads and keeps its own copy). Add the date, where, and a
+  message from the hosts; the card beside the form shows exactly what members will see. Only
+  *Published* screenings appear publicly; *Draft* and *Cancelled* stay on the dashboard.
+- The next published screening is the first thing on the site: the opening card, pinned to the
+  bulletin board in the lobby with the next few dates beside it, and at the top of `/club`. A
+  screening stays "next" until four hours after it starts. With nothing scheduled, the site falls
+  back to the logo panel.
 
 ## Production stack
 
@@ -132,6 +142,12 @@ docker compose down
 | `POST /api/club/logout` | clears the session cookie |
 | `GET /api/club/me` | `{name, admin}` for the current session |
 | `GET /api/club/admin/overview` | admins only (401 signed out, 403 for members) |
+| `GET /api/club/next` | the next published screening, or `null` |
+| `GET /api/club/schedule?limit=` | upcoming published screenings, soonest first |
+| `GET /api/club/admin/events` | admins: every screening with its status |
+| `POST /api/club/admin/events[/{id}]` | admins: create, or update by id |
+| `POST /api/club/admin/events/{id}/delete` | admins: delete |
+| `GET /api/club-art/{id}.webp` | cached poster for a screening that isn't in the library |
 
 ## Configuration
 

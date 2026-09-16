@@ -1,11 +1,12 @@
-import type { ComponentType } from 'react'
-import type { SiteInfo } from '../catalog/types'
-import { requestLock } from '../player/pointerLock'
+import { type ComponentType, useMemo } from 'react'
+import { useNavigate } from 'react-router'
+import { useScreenings } from '../club/screenings'
+import { releaseLock, requestLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
 import { Button3D } from '../ui3d/Button3D'
 import { Card3D, cardLayout } from '../ui3d/Card3D'
 import { BULLETIN, FIXTURE_IDS, FIXTURE_LABELS, FIXTURES, type FixtureId, GATE } from './anchors'
-import { CARDS } from './cards'
+import { cardFor } from './cards'
 import { Derrick } from './Derrick'
 import {
   BulletinBoard,
@@ -52,15 +53,17 @@ export function enterStore() {
   void requestLock(scene.canvas)
 }
 
-function openClub(site: SiteInfo | null) {
-  if (site) {
-    window.open(site.clubUrl, '_blank', 'noopener,noreferrer')
-  }
+function openClubPage(navigate: (path: string) => void) {
+  releaseLock()
+  navigate('/club')
 }
 
-function FixtureCard({ id, site }: { id: FixtureId; site: SiteInfo | null }) {
-  const card = CARDS[id]
+function FixtureCard({ id }: { id: FixtureId }) {
+  const next = useScreenings((state) => state.next)
+  const now = useMemo(() => new Date(), [])
+  const card = cardFor(id, next, now)
   const dispatch = useScene((state) => state.dispatch)
+  const navigate = useNavigate()
   const { bottom } = cardLayout(card.width, card.height)
   const buttonHeight = card.height * 0.12
   const y = bottom + buttonHeight / 2
@@ -70,8 +73,8 @@ function FixtureCard({ id, site }: { id: FixtureId; site: SiteInfo | null }) {
         position={[-card.width * 0.17, y, 0.004]}
         width={card.width * 0.52}
         height={buttonHeight}
-        label="Open club site"
-        onSelect={() => openClub(site)}
+        label="Club page"
+        onSelect={() => openClubPage(navigate)}
       />
       <Button3D
         position={[card.width * 0.3, y, 0.004]}
@@ -85,7 +88,7 @@ function FixtureCard({ id, site }: { id: FixtureId; site: SiteInfo | null }) {
   )
 }
 
-export function Lobby({ site }: { site: SiteInfo | null }) {
+export function Lobby() {
   const mode = useScene((state) => state.mode)
   const focus = useScene((state) => state.focus)
   const paused = useScene((state) => state.paused)
@@ -115,7 +118,7 @@ export function Lobby({ site }: { site: SiteInfo | null }) {
       <Hotspot label="Enter the store" glow={GATE_GLOW} active={inLobby} onSelect={enterStore}>
         <EntryGate />
       </Hotspot>
-      {mode === 'focus' && focus && <FixtureCard id={focus} site={site} />}
+      {mode === 'focus' && focus && <FixtureCard id={focus} />}
     </group>
   )
 }

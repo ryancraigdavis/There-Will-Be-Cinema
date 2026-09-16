@@ -51,7 +51,7 @@ export function StoreScene({ catalog, plan, site, atlasIndex, active }: Props) {
       {plan && <Shelving plan={plan} />}
       {plan && <Dividers dividers={plan.dividers} />}
       <Suspense fallback={null}>
-        <Lobby site={site} />
+        <Lobby />
         <Decor />
         {plan && <Banners banners={plan.banners} />}
         <StoreFixtures site={site} />

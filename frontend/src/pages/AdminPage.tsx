@@ -2,16 +2,12 @@ import '../club/club.css'
 import type { ReactNode } from 'react'
 import { AccountCard } from '../club/AccountCard'
 import { type DashboardView, dashboardView } from '../club/access'
+import { ScreeningsPanel } from '../club/admin/ScreeningsPanel'
 import { SignInForm } from '../club/SignInForm'
 import { useClubSession } from '../club/session'
 import { SiteHeader } from '../ui/SiteHeader'
 
 const PANELS = [
-  {
-    title: 'Screenings',
-    detail:
-      'Pick next week’s film from the library and it goes up on the front door and the bulletin board.',
-  },
   {
     title: 'RSVPs',
     detail: 'Everyone who called the RSVP line, with guests and notes. Only admins see this.',
@@ -46,6 +42,7 @@ function Dashboard() {
         </div>
         <AccountCard dashboardLink={false} />
       </header>
+      <ScreeningsPanel />
       <div className="dashboard__grid">
         {PANELS.map((panel) => (
           <section key={panel.title} className="panel">

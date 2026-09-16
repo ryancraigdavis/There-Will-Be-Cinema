@@ -2,12 +2,14 @@ import { Text } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useMemo } from 'react'
 import { CatmullRomCurve3, DoubleSide, TubeGeometry, Vector3 } from 'three'
+import { laterScreenings, useScreenings } from '../club/screenings'
 import { useTexture } from '../store/atlasTextures'
 import { ROOM } from '../store/constants'
 import { FONTS } from '../theme/fonts'
 import { PALETTE } from '../theme/palette'
 import { corkTexture, crtTexture, noteTexture } from '../theme/textures'
 import { BULLETIN, COUNTER, FIXTURES, GATE } from './anchors'
+import { BoardScreening } from './BoardScreening'
 
 const blockPointer = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
 
@@ -121,19 +123,37 @@ export function HangingLogo() {
 }
 
 const NOTES = [
-  { lines: ['NEXT SCREENING', 'Date TBA', 'See the club site'], x: -0.36, y: 0.04, tilt: 0.05 },
+  { lines: ['NEXT SCREENING', 'Date to be set', 'Check back soon'], x: -0.36, y: 0.04, tilt: 0.05 },
   {
-    lines: ['SUGGESTIONS', 'Drop yours in the', 'box on the counter'],
+    lines: ['SUGGESTIONS', 'The box on the', 'counter opens soon'],
     x: 0.02,
     y: -0.1,
     tilt: -0.04,
   },
-  { lines: ['RSVP', 'Call the line or', 'use the club site'], x: 0.38, y: 0.08, tilt: 0.07 },
+  { lines: ['RSVP', 'The phone line is', 'coming soon'], x: 0.38, y: 0.08, tilt: 0.07 },
 ]
+
+function PlaceholderNotes() {
+  const notes = useMemo(() => NOTES.map((note, i) => noteTexture(note.lines, i + 11)), [])
+  return NOTES.map((note, i) => (
+    <group key={note.lines[0]} position={[note.x, note.y, 0.03]} rotation={[0, 0, note.tilt]}>
+      <mesh>
+        <planeGeometry args={[0.3, 0.3]} />
+        <meshLambertMaterial map={notes[i]} />
+      </mesh>
+      <mesh position={[0, 0.13, 0.01]}>
+        <sphereGeometry args={[0.012, 10, 8]} />
+        <meshLambertMaterial color={i % 2 ? PALETTE.gold : PALETTE.rustBright} />
+      </mesh>
+    </group>
+  ))
+}
 
 export function BulletinBoard() {
   const cork = useMemo(() => corkTexture(), [])
-  const notes = useMemo(() => NOTES.map((note, i) => noteTexture(note.lines, i + 11)), [])
+  const next = useScreenings((state) => state.next)
+  const schedule = useScreenings((state) => state.schedule)
+  const later = useMemo(() => laterScreenings(schedule, next), [schedule, next])
   return (
     <group position={[...FIXTURES.bulletin]} rotation={[0, BULLETIN.yaw, 0]}>
       {[-0.56, 0.56].map((x) => (
@@ -163,18 +183,7 @@ export function BulletinBoard() {
       >
         MOVIE CLUB
       </Text>
-      {NOTES.map((note, i) => (
-        <group key={note.lines[0]} position={[note.x, note.y, 0.03]} rotation={[0, 0, note.tilt]}>
-          <mesh>
-            <planeGeometry args={[0.3, 0.3]} />
-            <meshLambertMaterial map={notes[i]} />
-          </mesh>
-          <mesh position={[0, 0.13, 0.01]}>
-            <sphereGeometry args={[0.012, 10, 8]} />
-            <meshLambertMaterial color={i % 2 ? PALETTE.gold : PALETTE.rustBright} />
-          </mesh>
-        </group>
-      ))}
+      {next === null ? <PlaceholderNotes /> : <BoardScreening next={next} later={later} />}
     </group>
   )
 }
