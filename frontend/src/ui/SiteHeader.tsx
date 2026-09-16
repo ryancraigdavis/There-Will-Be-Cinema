@@ -1,10 +1,12 @@
 import { Link, NavLink } from 'react-router'
 import { embyHomeUrl } from '../api'
 import { readyValue, useSite } from '../catalog/resources'
+import { useClubSession } from '../club/session'
 import { ExternalMark } from './icons'
 
 export function SiteHeader() {
   const site = readyValue(useSite())
+  const admin = useClubSession((state) => state.session.admin)
   return (
     <header className="site-header">
       <div className="site-header__inner">
@@ -24,9 +26,14 @@ export function SiteHeader() {
           >
             Emby <ExternalMark />
           </a>
-          <NavLink to="/club" className="site-nav__link">
+          <NavLink to="/club" end className="site-nav__link">
             Club
           </NavLink>
+          {admin ? (
+            <NavLink to="/club/admin" className="site-nav__link">
+              Dashboard
+            </NavLink>
+          ) : null}
         </nav>
       </div>
     </header>

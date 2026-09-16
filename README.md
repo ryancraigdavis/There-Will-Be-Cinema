@@ -84,10 +84,25 @@ npm run shoot -- --nolock --click-text="Walk in" --await-mode=counter --shot=cou
 
 Steps: `--click=x,y`, `--click-text=`, `--click-selector=`, `--hover=x,y`, `--key=Code:ms`,
 `--press=Key`, `--drag=x1,y1,x2,y2`, `--await-text=`, `--await-mode=`, `--await-path=`, `--goto=`,
-`--wait=ms`, `--shot=name`, `--flash=name`, `--steady-hover=x,y,n`, `--pick-report`, `--count=name`.
+`--wait=ms`, `--shot=name`, `--flash=name`, `--steady-hover=x,y,n`, `--pick-report`, `--count=name`,
+`--cookie=name=value` (follow it with `--goto=` so the page reloads with the cookie).
 Pass `--nolock` to test hover and clicks, since headless pointer lock reports no mouse movement, and
 `--mobile` with `--width`/`--height` for the touch layout. `--shot` settles 30 frames first, which
 takes seconds under software WebGL, so catch animations mid-flight with `--flash` instead.
+
+## Movie club
+
+The club is moving in from the old Canva page in stages (see the plan's Phase 5).
+
+- **Signing in:** anyone with an account on the Emby server signs in with their Emby username and
+  password — from **Sign in** on the intro, the name chip in the HUD, or `/club/admin`. The site
+  shows its own form and never Emby's grid of users. The password goes straight to Emby; the site
+  keeps only a signed 30-day cookie with the account id and name.
+- **Admins** are the Emby usernames listed in `CLUB_ADMINS`. They get a **Dashboard** link and the
+  dashboard at `/club/admin`; everyone else who signs in is a member.
+- Sign-in stays switched off until `SESSION_SECRET` is set. Changing that secret signs everyone out.
+- Eight wrong passwords in ten minutes, from one address or for one username, lock sign-in for a
+  while.
 
 ## Production stack
 
@@ -113,6 +128,10 @@ docker compose down
 | `GET /api/thumbs/{id}.webp` | 128×192 thumb |
 | `GET /api/atlases/index.json`, `/api/atlases/{n}.webp` | texture atlases for the 3D store |
 | `POST /api/admin/sync?mode=full\|incremental` | bearer `ADMIN_TOKEN` |
+| `POST /api/club/login` | `{username, password}` checked against Emby; sets the session cookie |
+| `POST /api/club/logout` | clears the session cookie |
+| `GET /api/club/me` | `{name, admin}` for the current session |
+| `GET /api/club/admin/overview` | admins only (401 signed out, 403 for members) |
 
 ## Configuration
 
@@ -127,3 +146,6 @@ docker compose down
 | `SYNC_INTERVAL_HOURS` | `6` |
 | `LOG_LEVEL` / `LOG_JSON` | `INFO` / `false` |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` |
+| `SESSION_SECRET` | empty, which leaves club sign-in switched off |
+| `CLUB_ADMINS` | empty; comma-separated Emby usernames allowed into the dashboard |
+| `SECURE_COOKIES` | `false`; set `true` wherever the site is served over https |

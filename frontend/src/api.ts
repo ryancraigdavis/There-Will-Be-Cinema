@@ -70,6 +70,39 @@ async function getJson<T>(path: string): Promise<T> {
   return (await response.json()) as T
 }
 
+export class ApiError extends Error {
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
+export function errorDetail(body: unknown, status: number): string {
+  const detail = (body as { detail?: unknown } | null)?.detail
+  const first = Array.isArray(detail) ? (detail[0] as { msg?: unknown } | undefined)?.msg : detail
+  return typeof first === 'string' ? first : `request failed (${status})`
+}
+
+export async function sendJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, { credentials: 'same-origin', ...init })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new ApiError(response.status, errorDetail(body, response.status))
+  }
+  return body as T
+}
+
+export function postJson<T>(path: string, payload: unknown = {}): Promise<T> {
+  return sendJson<T>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function fetchCatalog(): Promise<Catalog> {
   return toCatalog(await getJson<RawCatalog>('/api/catalog'))
 }

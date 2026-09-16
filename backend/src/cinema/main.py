@@ -5,9 +5,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from cinema.api.errors import register_exception_handlers
-from cinema.api.routes import admin, catalog, health, site
+from cinema.api.routes import admin, catalog, club, health, site
 from cinema.api.routes.static import mount_static
 from cinema.catalog.cache import CatalogCache
+from cinema.club.throttle import LoginThrottle
 from cinema.config import Settings, get_settings
 from cinema.db.connection import connect
 from cinema.emby.client import EmbyClient
@@ -29,6 +30,7 @@ def _lifespan(settings: Settings, client: EmbyClient | None):
             runner,
         )
         app.state.emby = emby
+        app.state.login_throttle = LoginThrottle()
         task = runner.start()
         yield
         task.cancel()
@@ -60,4 +62,5 @@ def create_app(settings: Settings | None = None, client: EmbyClient | None = Non
     app.include_router(catalog.router, prefix="/api")
     app.include_router(admin.router, prefix="/api")
     app.include_router(site.router, prefix="/api")
+    app.include_router(club.router, prefix="/api")
     return app

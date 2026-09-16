@@ -1,11 +1,13 @@
 import { Link } from 'react-router'
 import { embyHomeUrl } from '../api'
 import type { SiteInfo } from '../catalog/types'
+import { useClubSession } from '../club/session'
 import { FIXTURE_IDS, FIXTURE_LABELS } from '../lobby/anchors'
 import { enterStore } from '../lobby/Lobby'
 import type { RigMode } from '../player/cameraRig'
 import { releaseLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
+import { openAccount } from './AccountSheet'
 import { openGuide } from './Guide'
 import { ExternalMark } from './icons'
 
@@ -29,6 +31,15 @@ function freeHint(selected: boolean, locked: boolean): string {
 export function backToCounter() {
   useScene.getState().dispatch('back')
   releaseLock()
+}
+
+function AccountChip() {
+  const name = useClubSession((state) => state.session.name)
+  return (
+    <button type="button" className="chip" onClick={openAccount}>
+      {name ?? 'Sign in'}
+    </button>
+  )
 }
 
 function HudBar({ site, inStore }: { site: SiteInfo | null; inStore: boolean }) {
@@ -55,6 +66,7 @@ function HudBar({ site, inStore }: { site: SiteInfo | null; inStore: boolean }) 
         >
           Emby <ExternalMark />
         </a>
+        <AccountChip />
       </div>
     </div>
   )

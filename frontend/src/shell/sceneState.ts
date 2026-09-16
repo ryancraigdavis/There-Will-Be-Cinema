@@ -8,6 +8,8 @@ export interface Travel {
   itemId: string | null
 }
 
+export type Sheet = 'account'
+
 interface SceneState {
   mode: RigMode
   focus: FixtureId | null
@@ -16,6 +18,7 @@ interface SceneState {
   locked: boolean
   paused: boolean
   guide: boolean
+  sheet: Sheet | null
   travel: Travel | null
   canvas: HTMLCanvasElement | null
   dispatch: (event: RigEvent, focus?: FixtureId) => void
@@ -24,6 +27,7 @@ interface SceneState {
   setLocked: (locked: boolean) => void
   setPaused: (paused: boolean) => void
   setGuide: (guide: boolean) => void
+  setSheet: (sheet: Sheet | null) => void
   setTravel: (travel: Travel | null) => void
   setCanvas: (canvas: HTMLCanvasElement | null) => void
 }
@@ -36,6 +40,7 @@ export const useScene = create<SceneState>((set) => ({
   locked: false,
   paused: false,
   guide: false,
+  sheet: null,
   travel: null,
   canvas: null,
   dispatch: (event, focus) =>
@@ -52,6 +57,7 @@ export const useScene = create<SceneState>((set) => ({
   setLocked: (locked) => set({ locked }),
   setPaused: (paused) => set({ paused }),
   setGuide: (guide) => set({ guide }),
+  setSheet: (sheet) => set({ sheet }),
   setTravel: (travel) => set({ travel }),
   setCanvas: (canvas) => set({ canvas }),
 }))

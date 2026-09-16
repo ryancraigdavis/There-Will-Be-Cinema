@@ -2,6 +2,9 @@ from collections.abc import AsyncIterator
 
 import httpx
 
+from cinema.emby import auth
+from cinema.emby.models import EmbyUser
+
 FIELDS = ",".join(
     [
         "Genres",
@@ -42,11 +45,16 @@ class EmbyClient:
             timeout=timeout,
             transport=transport,
         )
+        self._base_url = base_url
+        self._transport = transport
         self._user_id: str | None = None
         self._server_id: str | None = None
 
     async def close(self) -> None:
         await self._http.aclose()
+
+    async def authenticate(self, username: str, password: str) -> EmbyUser:
+        return await auth.authenticate(self._base_url, username, password, self._transport)
 
     async def _get_json(self, path: str, params: dict | None = None) -> dict:
         resp = await self._http.get(path, params=params)

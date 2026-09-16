@@ -13,6 +13,7 @@ import { SceneShell } from '../shell/SceneShell'
 import { useScene } from '../shell/sceneState'
 import { buildStorePlan } from '../store/layout'
 import { StoreScene } from '../store/StoreScene'
+import { AccountSheet } from '../ui/AccountSheet'
 import { Guide } from '../ui/Guide'
 import { Hud } from '../ui/Hud'
 import { IntroOverlay, PauseOverlay } from '../ui/Overlays'
@@ -80,6 +81,8 @@ export function StorePage({ active }: { active: boolean }) {
         hoverLabel: state.hoverLabel,
         locked: state.locked,
         paused: state.paused,
+        guide: state.guide,
+        sheet: state.sheet,
       }
     }
     publish(useScene.getState())
@@ -92,6 +95,7 @@ export function StorePage({ active }: { active: boolean }) {
       const scene = useScene.getState()
       scene.setHover(null)
       scene.setGuide(false)
+      scene.setSheet(null)
       scene.setPaused(scene.mode === 'free')
     }
   }, [active])
@@ -113,6 +117,7 @@ export function StorePage({ active }: { active: boolean }) {
       )}
       <Hud site={site} />
       <Guide catalog={catalog} plan={plan} active={active} />
+      <AccountSheet active={active} />
       <IntroOverlay catalog={catalog} site={site} webgl={webgl} />
       <TouchControls />
       <PauseOverlay />

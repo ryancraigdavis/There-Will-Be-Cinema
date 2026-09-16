@@ -81,6 +81,10 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     console.log(`pick: ${report}`)
   },
   goto: (page, value) => page.goto(new URL(value, url).toString()),
+  cookie: (page, value) => {
+    const [name = '', ...rest] = value.split('=')
+    return page.context().addCookies([{ name, value: rest.join('='), url }])
+  },
   count: async (page, value) => {
     const report = await page.evaluate((name) => {
       const scene = window.__three?.scene

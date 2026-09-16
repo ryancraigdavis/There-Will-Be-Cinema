@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { atlasUrl, embyHomeUrl, embyItemUrl, posterUrl, toItem, toSite } from './api'
+import { atlasUrl, embyHomeUrl, embyItemUrl, errorDetail, posterUrl, toItem, toSite } from './api'
 import { catalogFixture, rawItem } from './test/fixtures'
 
 const site = toSite({
@@ -55,5 +55,20 @@ describe('api helpers', () => {
 
   it('versions poster urls by image tag', () => {
     expect(posterUrl({ id: '42', imageTag: 't9' })).toBe('/api/posters/42.webp?v=t9')
+  })
+})
+
+describe('errorDetail', () => {
+  it.each([
+    ['a plain detail', { detail: 'invalid username or password' }, 'invalid username or password'],
+    [
+      'the first validation message',
+      { detail: [{ msg: 'field required' }, { msg: 'x' }] },
+      'field required',
+    ],
+    ['a fallback for an empty body', null, 'request failed (502)'],
+    ['a fallback for an odd detail', { detail: 42 }, 'request failed (502)'],
+  ])('reads %s', (_name, body, expected) => {
+    expect(errorDetail(body, 502)).toBe(expected)
   })
 })

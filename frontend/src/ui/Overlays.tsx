@@ -2,8 +2,10 @@ import { Link } from 'react-router'
 import { embyHomeUrl } from '../api'
 import { formatCount } from '../catalog/format'
 import type { Catalog, SiteInfo } from '../catalog/types'
+import { useClubSession } from '../club/session'
 import { requestLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
+import { openAccount } from './AccountSheet'
 import { backToCounter } from './Hud'
 import { ExternalMark } from './icons'
 
@@ -16,6 +18,7 @@ interface IntroProps {
 export function IntroOverlay({ catalog, site, webgl }: IntroProps) {
   const mode = useScene((state) => state.mode)
   const dispatch = useScene((state) => state.dispatch)
+  const member = useClubSession((state) => state.session.name)
   const count = catalog ? formatCount(catalog.items.length, 'title') : 'Counting tapes…'
   return mode !== 'intro' ? null : (
     <div className="intro">
@@ -39,6 +42,9 @@ export function IntroOverlay({ catalog, site, webgl }: IntroProps) {
             Watch on Emby <ExternalMark />
           </a>
           <Link to="/club">Movie club</Link>
+          <button type="button" onClick={openAccount}>
+            {member ?? 'Sign in'}
+          </button>
         </nav>
         <p className="intro__note">Best with a mouse and keyboard.</p>
       </div>
@@ -55,8 +61,8 @@ function resume() {
 export function PauseOverlay() {
   const paused = useScene((state) => state.paused)
   const mode = useScene((state) => state.mode)
-  const guide = useScene((state) => state.guide)
-  return !paused || guide || mode !== 'free' ? null : (
+  const covered = useScene((state) => state.guide || state.sheet !== null)
+  return !paused || covered || mode !== 'free' ? null : (
     <div className="pause">
       <section className="pause__panel" aria-labelledby="pause-title">
         <h2 id="pause-title" className="pause__title">

@@ -10,11 +10,12 @@ import { formatCount } from '../catalog/format'
 import { bestMatches, buildIndex, normalizeTerm, rankIds } from '../catalog/search'
 import type { Catalog, CatalogItem } from '../catalog/types'
 import { enterStore } from '../lobby/Lobby'
-import { releaseLock, requestLock } from '../player/pointerLock'
+import { requestLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
 import type { DirectoryEntry, StorePlan } from '../store/layout'
 import { buildLocations, genreStops, type StoreLocation } from '../store/locate'
 import { SearchIcon } from './icons'
+import { holdScene, resumeScene } from './resume'
 
 const RESULT_LIMIT = 24
 const OPEN_KEYS = new Set(['KeyM', 'Slash'])
@@ -28,14 +29,12 @@ function typing(target: EventTarget | null): boolean {
 
 export function openGuide() {
   useScene.getState().setGuide(true)
-  releaseLock()
+  holdScene()
 }
 
 export function closeGuide() {
-  const scene = useScene.getState()
-  scene.setGuide(false)
-  scene.setPaused(false)
-  void requestLock(scene.canvas)
+  useScene.getState().setGuide(false)
+  resumeScene()
 }
 
 function toggleGuide() {
@@ -55,7 +54,10 @@ function travelTo(location: StoreLocation, itemId: string | null) {
 function keyAction(event: KeyboardEvent): (() => void) | null {
   const scene = useScene.getState()
   const choices: [boolean, () => void][] = [
-    [OPEN_KEYS.has(event.code) && !typing(event.target) && scene.mode !== 'intro', toggleGuide],
+    [
+      OPEN_KEYS.has(event.code) && !typing(event.target) && scene.mode !== 'intro' && !scene.sheet,
+      toggleGuide,
+    ],
     [event.code === 'Escape' && scene.guide, closeGuide],
   ]
   return choices.find(([when]) => when)?.[1] ?? null

@@ -32,7 +32,7 @@ function isTyping(target: EventTarget | null): boolean {
 
 function handleKeyDown(event: KeyboardEvent, input: RoamInput) {
   const scene = useScene.getState()
-  if (scene.guide) {
+  if (scene.guide || scene.sheet) {
     return
   }
   if (event.code === 'Escape') {

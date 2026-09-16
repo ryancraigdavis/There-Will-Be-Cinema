@@ -189,7 +189,8 @@
   gap: 8px 20px;
 }
 
-.intro__links a {
+.intro__links a,
+.intro__links button {
   font: 500 14px / 1 var(--font-display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -197,7 +198,15 @@
   text-decoration: none;
 }
 
-.intro__links a:hover {
+.intro__links button {
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.intro__links a:hover,
+.intro__links button:hover {
   color: var(--gold);
 }
 
