@@ -1,5 +1,11 @@
-import { Canvas, events as pointerEvents, type RootState, useFrame } from '@react-three/fiber'
-import { type ReactNode, useRef } from 'react'
+import {
+  Canvas,
+  events as pointerEvents,
+  type RootState,
+  useFrame,
+  useThree,
+} from '@react-three/fiber'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { ANCHORS } from '../lobby/anchors'
 import { useScene } from './sceneState'
 
@@ -8,6 +14,7 @@ declare global {
     __sceneReady?: boolean
     __rendererInfo?: string
     __renderStats?: Record<string, number>
+    __three?: { scene: unknown; camera: unknown; raycaster: unknown }
   }
 }
 
@@ -47,6 +54,16 @@ function ReadySignal() {
   return null
 }
 
+function DebugHandles() {
+  const scene = useThree((state) => state.scene)
+  const camera = useThree((state) => state.camera)
+  const raycaster = useThree((state) => state.raycaster)
+  useEffect(() => {
+    window.__three = import.meta.env.DEV ? { scene, camera, raycaster } : undefined
+  }, [scene, camera, raycaster])
+  return null
+}
+
 function StatsSignal() {
   const frames = useRef(0)
   useFrame(({ gl }) => {
@@ -80,6 +97,7 @@ export function SceneShell({ active, children }: { active: boolean; children: Re
       {children}
       <ReadySignal />
       <StatsSignal />
+      <DebugHandles />
     </Canvas>
   )
 }

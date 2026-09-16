@@ -1,8 +1,10 @@
+import type { ThreeEvent } from '@react-three/fiber'
 import { useMemo } from 'react'
 import { PALETTE } from '../theme/palette'
 import { carpetTexture, ceilingTexture } from '../theme/textures'
 import { ROOM } from './constants'
 
+const blockPointer = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
 const THICKNESS = 0.1
 const WIDTH = ROOM.maxX - ROOM.minX
 const DEPTH = ROOM.maxZ - ROOM.minZ
@@ -73,7 +75,12 @@ export function Room() {
   }, [])
 
   return (
-    <group>
+    <group
+      name="room"
+      onPointerOver={blockPointer}
+      onPointerMove={blockPointer}
+      onClick={blockPointer}
+    >
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[CENTER_X, 0, CENTER_Z]}>
         <planeGeometry args={[WIDTH, DEPTH]} />
         <meshLambertMaterial map={carpet} />

@@ -1,7 +1,18 @@
 import { Text } from '@react-three/drei'
 import { type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
-import { type Camera, type Group, MeshBasicMaterial, type Texture } from 'three'
+import {
+  type Camera,
+  type Group,
+  type Material,
+  type Mesh,
+  MeshBasicMaterial,
+  type Object3D,
+  Raycaster,
+  type Scene,
+  type Texture,
+  Vector3,
+} from 'three'
 import { embyItemUrl, posterUrl } from '../api'
 import { type BadgeKind, badgesFor } from '../catalog/badges'
 import { metaLine, truncate } from '../catalog/format'
@@ -14,7 +25,11 @@ import { Button3D } from '../ui3d/Button3D'
 import { useTexture } from './atlasTextures'
 
 const DISTANCE = 0.42
+const MIN_DISTANCE = 0.18
+const CLEARANCE = 0.08
 const SCALE = 0.6
+const OVERLAY_ORDER = 1000
+const SETTLE_FRAMES = 90
 const CARD = { x: 0.15, width: 0.38, height: 0.46, pad: 0.022 }
 const TITLE_SIZE = 0.03
 const TITLE_CHARS_PER_LINE = 24
@@ -31,20 +46,48 @@ const BADGE_COLORS: Record<BadgeKind, { fill: string; text: string }> = {
 interface Placement {
   position: Vec3
   yaw: number
+  distance: number
 }
 
 const stop = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
 
-function placeInFront(camera: Camera): Placement {
+const raycaster = new Raycaster()
+
+function clearDistance(camera: Camera, scene: Scene, forward: Vector3): number {
+  raycaster.set(camera.position, forward)
+  raycaster.far = DISTANCE + CLEARANCE
+  const nearest =
+    raycaster.intersectObjects(scene.children, true)[0]?.distance ?? Number.POSITIVE_INFINITY
+  return Math.max(MIN_DISTANCE, Math.min(DISTANCE, nearest - CLEARANCE))
+}
+
+function placeInFront(camera: Camera, scene: Scene): Placement {
   const yaw = camera.rotation.y
+  const forward = new Vector3(-Math.sin(yaw), 0, -Math.cos(yaw))
+  const distance = clearDistance(camera, scene, forward)
   return {
     position: [
-      camera.position.x - Math.sin(yaw) * DISTANCE,
-      camera.position.y - 0.06,
-      camera.position.z - Math.cos(yaw) * DISTANCE,
+      camera.position.x + forward.x * distance,
+      camera.position.y - 0.06 * (distance / DISTANCE),
+      camera.position.z + forward.z * distance,
     ],
     yaw,
+    distance,
   }
+}
+
+function drawOnTop(root: Object3D) {
+  let order = OVERLAY_ORDER
+  root.traverse((node) => {
+    node.renderOrder = order
+    order += 1
+    const attached = (node as Mesh).material
+    const materials: Material[] = Array.isArray(attached) ? attached : attached ? [attached] : []
+    for (const material of materials) {
+      material.depthTest = false
+      material.depthWrite = false
+    }
+  })
 }
 
 function boxMaterials(poster: Texture | null): MeshBasicMaterial[] {
@@ -101,6 +144,7 @@ function DetailPanel({
 }) {
   const group = useRef<Group>(null)
   const grow = useRef(0)
+  const settle = useRef(0)
   const poster = useTexture(item.imageTag ? posterUrl(item) : null)
   const select = useScene((state) => state.select)
   const materials = useMemo(() => boxMaterials(poster), [poster])
@@ -116,7 +160,12 @@ function DetailPanel({
 
   useFrame((_, delta) => {
     grow.current = Math.min(1, grow.current + delta * 5)
-    group.current?.scale.setScalar(SCALE * (0.6 + 0.4 * (1 - (1 - grow.current) ** 3)))
+    const eased = 0.6 + 0.4 * (1 - (1 - grow.current) ** 3)
+    group.current?.scale.setScalar(SCALE * (placement.distance / DISTANCE) * eased)
+    if (settle.current < SETTLE_FRAMES && group.current) {
+      settle.current += 1
+      drawOnTop(group.current)
+    }
   })
 
   const top = CARD.height / 2
@@ -133,7 +182,7 @@ function DetailPanel({
       ref={group}
       position={[...placement.position]}
       rotation={[0, placement.yaw, 0]}
-      scale={SCALE * 0.6}
+      scale={SCALE * (placement.distance / DISTANCE) * 0.6}
     >
       <mesh
         position={[-0.16, 0.01, 0]}
@@ -226,8 +275,12 @@ function DetailPanel({
 export function BoxDetail({ catalog, site }: { catalog: Catalog; site: SiteInfo | null }) {
   const selected = useScene((state) => state.selected)
   const camera = useThree((state) => state.camera)
+  const scene = useThree((state) => state.scene)
   const item = selected ? catalog.byId.get(selected) : undefined
-  const placement = useMemo(() => (item ? placeInFront(camera) : null), [item, camera])
+  const placement = useMemo(
+    () => (item ? placeInFront(camera, scene) : null),
+    [item, camera, scene],
+  )
   return item && placement ? (
     <DetailPanel key={item.id} item={item} site={site} placement={placement} />
   ) : null

@@ -63,6 +63,23 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     console.log(`hover samples ${steady ? 'steady' : 'UNSTEADY'}: ${JSON.stringify(samples)}`)
     process.exitCode = steady ? process.exitCode : 1
   },
+  'pick-report': async (page) => {
+    const report = await page.evaluate(() => {
+      const three = window.__three
+      if (!three) {
+        return 'no debug handle'
+      }
+      const { scene, camera, raycaster } = three
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera)
+      raycaster.far = 12
+      return raycaster
+        .intersectObjects(scene.children, true)
+        .slice(0, 5)
+        .map((hit) => `${hit.object.name || hit.object.type}@${hit.distance.toFixed(2)}`)
+        .join(' | ')
+    })
+    console.log(`pick: ${report}`)
+  },
   wait: (page, value) => page.waitForTimeout(Number(value)),
   shot: async (page, value) => {
     await settle(page)
@@ -130,5 +147,17 @@ declare global {
     __rendererInfo?: string
     __scene?: Record<string, unknown>
     __renderStats?: Record<string, number>
+    __three?: {
+      scene: { children: unknown[] }
+      camera: unknown
+      raycaster: {
+        far: number
+        setFromCamera: (pointer: { x: number; y: number }, camera: unknown) => void
+        intersectObjects: (
+          objects: unknown[],
+          recursive: boolean,
+        ) => { object: { name: string; type: string }; distance: number }[]
+      }
+    }
   }
 }

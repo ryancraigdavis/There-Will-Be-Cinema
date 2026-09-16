@@ -1,4 +1,5 @@
 import { Text } from '@react-three/drei'
+import type { ThreeEvent } from '@react-three/fiber'
 import { useMemo } from 'react'
 import { CatmullRomCurve3, DoubleSide, TubeGeometry, Vector3 } from 'three'
 import { useTexture } from '../store/atlasTextures'
@@ -8,12 +9,20 @@ import { PALETTE } from '../theme/palette'
 import { corkTexture, crtTexture, noteTexture } from '../theme/textures'
 import { BULLETIN, COUNTER, FIXTURES, GATE } from './anchors'
 
+const blockPointer = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
+
 export function Counter() {
   const { minX, maxX, minZ, maxZ, height } = COUNTER
   const width = maxX - minX
   const depth = maxZ - minZ
   return (
-    <group position={[(minX + maxX) / 2, 0, (minZ + maxZ) / 2]}>
+    <group
+      name="counter"
+      position={[(minX + maxX) / 2, 0, (minZ + maxZ) / 2]}
+      onPointerOver={blockPointer}
+      onPointerMove={blockPointer}
+      onClick={blockPointer}
+    >
       <mesh position={[0, (height - 0.04) / 2, 0]}>
         <boxGeometry args={[width, height - 0.04, depth]} />
         <meshLambertMaterial color={PALETTE.rust} />

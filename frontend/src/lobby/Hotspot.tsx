@@ -32,8 +32,8 @@ export function Hotspot({ label, glow, active, onSelect, children }: Props) {
   }, [active])
 
   const over = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation()
     if (active) {
-      event.stopPropagation()
       setHovered(true)
       useScene.getState().setHover(label)
       document.body.style.cursor = 'pointer'
@@ -47,15 +47,15 @@ export function Hotspot({ label, glow, active, onSelect, children }: Props) {
     }
   }
   const click = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
     if (active && event.delta <= CLICK_SLOP_PX) {
-      event.stopPropagation()
       out()
       onSelect()
     }
   }
 
   return (
-    <group onPointerOver={over} onPointerOut={out} onClick={click}>
+    <group onPointerOver={over} onPointerMove={over} onPointerOut={out} onClick={click}>
       {children}
       <mesh
         visible={lit}

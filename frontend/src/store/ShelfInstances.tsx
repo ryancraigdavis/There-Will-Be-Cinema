@@ -155,8 +155,11 @@ function BoxBatch({ slots, atlas, index, catalog, size, pickable }: BatchProps) 
   }
 
   const move = (event: ThreeEvent<PointerEvent>) => {
+    if (!browsing()) {
+      return
+    }
     event.stopPropagation()
-    const next = browsing() ? (event.instanceId ?? -1) : -1
+    const next = event.instanceId ?? -1
     if (next !== hovered.current) {
       hoverIndex(next)
     }
@@ -169,17 +172,19 @@ function BoxBatch({ slots, atlas, index, catalog, size, pickable }: BatchProps) 
   }
 
   const click = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation()
     const slot = slots[event.instanceId ?? -1]
-    if (slot && browsing() && event.delta <= CLICK_SLOP_PX) {
-      hoverIndex(-1)
-      useScene.getState().select(slot.itemId)
+    if (!slot || !browsing() || event.delta > CLICK_SLOP_PX) {
+      return
     }
+    event.stopPropagation()
+    hoverIndex(-1)
+    useScene.getState().select(slot.itemId)
   }
 
   return (
     <instancedMesh
       ref={mesh}
+      name="tapes"
       args={[geometry, material, slots.length]}
       onPointerMove={move}
       onPointerOut={out}
