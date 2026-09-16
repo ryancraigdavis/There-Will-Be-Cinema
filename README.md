@@ -113,6 +113,16 @@ The club is moving in from the old Canva page in stages (see the plan's Phase 5)
   bulletin board in the lobby with the next few dates beside it, and at the top of `/club`. A
   screening stays "next" until four hours after it starts. With nothing scheduled, the site falls
   back to the logo panel.
+- **RSVP:** the RSVP button on the opening card, the telephone on the counter, and the `/club` page
+  (any upcoming date). Going, maybe or can't make it, plus guests and a note. Signed-in members
+  answer as their Emby account; everyone else types a name, and answering again with the same name
+  changes the answer instead of adding a second one. Nobody but the admins ever sees who's coming.
+- **Suggestions:** the suggestion box on the counter and `/club`. Search the library or type a film
+  that isn't in it, with an optional note. The dashboard inbox marks each one shortlisted,
+  scheduled or passed.
+- **Dashboard:** every screening shows its RSVP count; *Guest list* opens names, answers, guests
+  and notes with a headcount, and lets you remove a bogus entry. Deleting a screening deletes its
+  RSVPs. Anonymous RSVPs and suggestions are capped at 30 per address every ten minutes.
 
 ## Production stack
 
@@ -148,6 +158,13 @@ docker compose down
 | `POST /api/club/admin/events[/{id}]` | admins: create, or update by id |
 | `POST /api/club/admin/events/{id}/delete` | admins: delete |
 | `GET /api/club-art/{id}.webp` | cached poster for a screening that isn't in the library |
+| `POST /api/club/rsvp` | `{event_id, answer, guests, name, note}`; upserts per account or name |
+| `GET /api/club/rsvp?event_id=` | the signed-in member's own answer, or `null` |
+| `POST /api/club/suggestions` | `{item_id}` or `{title, year}`, plus `name` and `note` |
+| `GET /api/club/admin/events/{id}/rsvps` | admins: guest list and totals |
+| `POST /api/club/admin/rsvps/{id}/delete` | admins: remove an RSVP |
+| `GET /api/club/admin/suggestions` | admins: the inbox, newest first |
+| `POST /api/club/admin/suggestions/{id}[/delete]` | admins: set `{status}`, or delete |
 
 ## Configuration
 

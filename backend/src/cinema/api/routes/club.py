@@ -50,7 +50,7 @@ async def _verify(request: Request, credentials: Credentials) -> EmbyUser:
     except TooManyAttempts as error:
         raise HTTPException(429, "too many sign-in attempts, try again in a few minutes") from error
     except InvalidLogin as error:
-        throttle.fail(keys, now)
+        throttle.record(keys, now)
         raise HTTPException(401, "invalid username or password") from error
     except EmbyUnavailable as error:
         raise HTTPException(502, "the emby server did not answer") from error

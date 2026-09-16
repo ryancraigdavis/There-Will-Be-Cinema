@@ -74,6 +74,12 @@ export function boardDate(iso: string, timeZone?: string): string {
     .toUpperCase()
 }
 
+export function dayMonth(iso: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat(LOCALE, { timeZone, month: 'short', day: 'numeric' }).format(
+    new Date(iso),
+  )
+}
+
 const pad = (value: number) => String(value).padStart(2, '0')
 
 export function toLocalInput(iso: string): string {

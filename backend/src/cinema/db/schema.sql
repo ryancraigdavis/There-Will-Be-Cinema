@@ -85,3 +85,31 @@ CREATE TABLE IF NOT EXISTS club_events (
     updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_club_events_when ON club_events (status, starts_at);
+
+CREATE TABLE IF NOT EXISTS club_rsvps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER NOT NULL,
+    person TEXT NOT NULL,
+    name TEXT NOT NULL,
+    emby_user_id TEXT,
+    answer TEXT NOT NULL,
+    guests INTEGER NOT NULL DEFAULT 0,
+    note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE (event_id, person)
+);
+
+CREATE TABLE IF NOT EXISTS club_suggestions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id TEXT,
+    title TEXT NOT NULL,
+    year INTEGER,
+    name TEXT NOT NULL,
+    emby_user_id TEXT,
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'new',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_club_suggestions_when ON club_suggestions (created_at);

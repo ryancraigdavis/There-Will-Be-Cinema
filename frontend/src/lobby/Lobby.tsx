@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router'
 import { useScreenings } from '../club/screenings'
 import { releaseLock, requestLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
+import { openRsvp, openSuggestions } from '../ui/Sheets'
 import { Button3D } from '../ui3d/Button3D'
 import { Card3D, cardLayout } from '../ui3d/Card3D'
 import { BULLETIN, FIXTURE_IDS, FIXTURE_LABELS, FIXTURES, type FixtureId, GATE } from './anchors'
-import { cardFor } from './cards'
+import { buttonRow, type CardAction, cardActions, cardFor } from './cards'
 import { Derrick } from './Derrick'
 import {
   BulletinBoard,
@@ -53,37 +54,50 @@ export function enterStore() {
   void requestLock(scene.canvas)
 }
 
-function openClubPage(navigate: (path: string) => void) {
-  releaseLock()
-  navigate('/club')
+const ACTION_LABELS: Record<CardAction, string> = {
+  rsvp: 'RSVP',
+  suggest: 'Suggest a film',
+  club: 'Club page',
+  back: 'Back',
+}
+
+function useCardHandlers(): Record<CardAction, () => void> {
+  const dispatch = useScene((state) => state.dispatch)
+  const navigate = useNavigate()
+  return {
+    rsvp: openRsvp,
+    suggest: openSuggestions,
+    club: () => {
+      releaseLock()
+      navigate('/club')
+    },
+    back: () => dispatch('back'),
+  }
 }
 
 function FixtureCard({ id }: { id: FixtureId }) {
   const next = useScreenings((state) => state.next)
   const now = useMemo(() => new Date(), [])
   const card = cardFor(id, next, now)
-  const dispatch = useScene((state) => state.dispatch)
-  const navigate = useNavigate()
+  const actions = cardActions(id, next)
+  const handlers = useCardHandlers()
   const { bottom } = cardLayout(card.width, card.height)
   const buttonHeight = card.height * 0.12
   const y = bottom + buttonHeight / 2
+  const row = buttonRow(card.width, actions.length)
   return (
     <Card3D {...card}>
-      <Button3D
-        position={[-card.width * 0.17, y, 0.004]}
-        width={card.width * 0.52}
-        height={buttonHeight}
-        label="Club page"
-        onSelect={() => openClubPage(navigate)}
-      />
-      <Button3D
-        position={[card.width * 0.3, y, 0.004]}
-        width={card.width * 0.28}
-        height={buttonHeight}
-        label="Back"
-        variant="ghost"
-        onSelect={() => dispatch('back')}
-      />
+      {actions.map((action, i) => (
+        <Button3D
+          key={action}
+          position={[row.xs[i] ?? 0, y, 0.004]}
+          width={row.width}
+          height={buttonHeight}
+          label={ACTION_LABELS[action]}
+          variant={action === 'back' ? 'ghost' : 'primary'}
+          onSelect={handlers[action]}
+        />
+      ))}
     </Card3D>
   )
 }

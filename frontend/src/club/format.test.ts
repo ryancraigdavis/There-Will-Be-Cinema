@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   boardDate,
+  dayMonth,
   daysUntil,
   fromLocalInput,
   relativeDay,
@@ -52,6 +53,10 @@ describe('formatting a screening', () => {
 
   it('prints a short board date', () => {
     expect(boardDate(FRIDAY_730PM, CHICAGO)).toBe('FRI SEP 18')
+  })
+
+  it('prints a day and month', () => {
+    expect(dayMonth(FRIDAY_730PM, CHICAGO)).toBe('Sep 18')
   })
 })
 

@@ -8,9 +8,9 @@ import { useClubSession } from '../club/session'
 import type { Screening } from '../club/types'
 import { requestLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
-import { openAccount } from './AccountSheet'
 import { backToCounter } from './Hud'
 import { ExternalMark } from './icons'
+import { openAccount, openRsvp } from './Sheets'
 
 interface IntroProps {
   catalog: Catalog | null
@@ -72,7 +72,12 @@ function ScreeningIntro({
         height={128}
       />
       <ScreeningCard screening={screening} compact />
-      <EnterButton webgl={webgl} />
+      <div className="intro__actions">
+        <EnterButton webgl={webgl} />
+        <button type="button" className="button button--ghost intro__rsvp" onClick={openRsvp}>
+          RSVP
+        </button>
+      </div>
       <IntroLinks site={site} />
       <p className="intro__note">{count}Best with a mouse and keyboard.</p>
     </div>

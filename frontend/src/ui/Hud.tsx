@@ -7,9 +7,9 @@ import { enterStore } from '../lobby/Lobby'
 import type { RigMode } from '../player/cameraRig'
 import { releaseLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
-import { openAccount } from './AccountSheet'
 import { openGuide } from './Guide'
 import { ExternalMark } from './icons'
+import { openAccount } from './Sheets'
 
 const LOBBY_HINTS: Partial<Record<RigMode, string>> = {
   counter: 'Drag to look around. Click something in the lobby, or head through the gate.',

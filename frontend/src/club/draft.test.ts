@@ -39,6 +39,7 @@ const screening = (overrides: Partial<AdminScreening> = {}): AdminScreening => (
   status: 'published',
   artUrl: 'https://img.example/m.jpg',
   updatedAt: FRIDAY,
+  rsvps: { going: 0, maybe: 0, declined: 0, guests: 0 },
   ...overrides,
 })
 

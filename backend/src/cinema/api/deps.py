@@ -6,7 +6,7 @@ from fastapi import HTTPException, Request
 from cinema.catalog.cache import CatalogCache
 from cinema.club import sessions
 from cinema.club.sessions import Session
-from cinema.club.throttle import LoginThrottle
+from cinema.club.throttle import Throttle, TooManyAttempts
 from cinema.config import Settings
 from cinema.sync.scheduler import SyncRunner
 
@@ -27,8 +27,18 @@ def conn_of(request: Request):
     return request.app.state.conn
 
 
-def throttle_of(request: Request) -> LoginThrottle:
+def throttle_of(request: Request) -> Throttle:
     return request.app.state.login_throttle
+
+
+def limit_posts(request: Request) -> None:
+    keys, now = [f"ip:{client_address(request)}"], time.time()
+    throttle = request.app.state.post_throttle
+    try:
+        throttle.check(keys, now)
+    except TooManyAttempts as error:
+        raise HTTPException(429, "too many submissions, try again in a few minutes") from error
+    throttle.record(keys, now)
 
 
 def session_of(request: Request) -> Session | None:

@@ -6,7 +6,7 @@ class TooManyAttempts(Exception):
 
 
 @dataclass
-class LoginThrottle:
+class Throttle:
     limit: int = 8
     window: float = 600.0
     _failures: dict[str, list[float]] = field(default_factory=dict)
@@ -20,7 +20,7 @@ class LoginThrottle:
         if any(len(self._recent(key, now)) >= self.limit for key in keys):
             raise TooManyAttempts
 
-    def fail(self, keys: list[str], now: float) -> None:
+    def record(self, keys: list[str], now: float) -> None:
         for key in keys:
             self._recent(key, now).append(now)
 

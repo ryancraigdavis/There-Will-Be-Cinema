@@ -13,10 +13,10 @@ import { SceneShell } from '../shell/SceneShell'
 import { useScene } from '../shell/sceneState'
 import { buildStorePlan } from '../store/layout'
 import { StoreScene } from '../store/StoreScene'
-import { AccountSheet } from '../ui/AccountSheet'
 import { Guide } from '../ui/Guide'
 import { Hud } from '../ui/Hud'
 import { IntroOverlay, PauseOverlay } from '../ui/Overlays'
+import { Sheets } from '../ui/Sheets'
 import { TouchControls } from '../ui/TouchControls'
 
 declare global {
@@ -117,7 +117,7 @@ export function StorePage({ active }: { active: boolean }) {
       )}
       <Hud site={site} />
       <Guide catalog={catalog} plan={plan} active={active} />
-      <AccountSheet active={active} />
+      <Sheets active={active} />
       <IntroOverlay catalog={catalog} site={site} webgl={webgl} />
       <TouchControls />
       <PauseOverlay />

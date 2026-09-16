@@ -1,41 +1,59 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { adminOrder, isUpcoming } from '../draft'
 import { screeningDate, screeningTime } from '../format'
+import { rsvpSummary } from '../rsvp'
 import { fetchAdminScreenings, useScreenings } from '../screenings'
 import type { AdminScreening } from '../types'
+import { GuestList } from './GuestList'
 import { ScreeningEditor } from './ScreeningEditor'
 
 type Editing = AdminScreening | 'new' | null
 
 const STATUS_LABELS = { draft: 'Draft', published: 'Published', cancelled: 'Cancelled' } as const
 
-function ScreeningRow({
-  screening,
-  now,
-  onEdit,
-}: {
+interface RowProps {
   screening: AdminScreening
   now: Date
   onEdit: () => void
-}) {
+  onChanged: () => void
+}
+
+function ScreeningRow({ screening, now, onEdit, onChanged }: RowProps) {
+  const [guests, setGuests] = useState(false)
   const past = !isUpcoming(screening.startsAt, now)
   return (
-    <li className={past ? 'slate slate--past' : 'slate'}>
-      <div className="slate__when">
-        <span>{screeningDate(screening.startsAt)}</span>
-        <span className="slate__time">{screeningTime(screening.startsAt)}</span>
+    <li className="slate-item">
+      <div className={past ? 'slate slate--past' : 'slate'}>
+        <div className="slate__when">
+          <span>{screeningDate(screening.startsAt)}</span>
+          <span className="slate__time">{screeningTime(screening.startsAt)}</span>
+        </div>
+        <div className="slate__film">
+          <strong>{screening.title}</strong>
+          {screening.year === null ? null : <span> {screening.year}</span>}
+          <span className="slate__rsvps">{rsvpSummary(screening.rsvps)}</span>
+          {screening.artUrl && screening.posterUrl === null ? (
+            <span className="slate__warning">Couldn’t load the poster from that address</span>
+          ) : null}
+        </div>
+        <span className={`badge badge--${screening.status}`}>
+          {STATUS_LABELS[screening.status]}
+        </span>
+        <div className="slate__buttons">
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={guests}
+            onClick={() => setGuests(!guests)}
+          >
+            Guest list
+          </button>
+          <button type="button" className="chip" onClick={onEdit}>
+            Edit
+          </button>
+        </div>
       </div>
-      <div className="slate__film">
-        <strong>{screening.title}</strong>
-        {screening.year === null ? null : <span> {screening.year}</span>}
-        {screening.artUrl && screening.posterUrl === null ? (
-          <span className="slate__warning">Couldn’t load the poster from that address</span>
-        ) : null}
-      </div>
-      <span className={`badge badge--${screening.status}`}>{STATUS_LABELS[screening.status]}</span>
-      <button type="button" className="chip" onClick={onEdit}>
-        Edit
-      </button>
+      {guests ? <GuestList eventId={screening.id} onChanged={onChanged} /> : null}
     </li>
   )
 }
@@ -106,6 +124,7 @@ export function ScreeningsPanel() {
             screening={screening}
             now={now}
             onEdit={() => setEditing(screening)}
+            onChanged={load}
           />
         ))}
       </ul>

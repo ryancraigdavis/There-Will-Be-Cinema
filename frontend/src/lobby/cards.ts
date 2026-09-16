@@ -59,18 +59,48 @@ function bulletinCopy(next: Screening | null, now: Date): Copy {
       }
 }
 
+function telephoneCopy(next: Screening | null, now: Date): Copy {
+  return next === null
+    ? {
+        kicker: 'RSVP line',
+        title: 'The line is quiet',
+        body: 'Nothing is on the schedule yet. Check the bulletin board for news.',
+      }
+    : {
+        kicker: 'RSVP line',
+        title: 'Call ahead for a seat',
+        body: `Let us know if you’re coming to ${next.title}.\n${screeningWhen(next.startsAt, now)}`,
+      }
+}
+
 const COPY: Record<FixtureId, (next: Screening | null, now: Date) => Copy> = {
   bulletin: bulletinCopy,
   suggestion: () => ({
     kicker: 'Suggestion box',
     title: 'Pitch us a movie',
-    body: 'The suggestion box opens very soon. Keep your list handy.',
+    body: 'Anything from the library, or something we should track down.',
   }),
-  telephone: () => ({
-    kicker: 'RSVP line',
-    title: 'Call ahead for a seat',
-    body: 'The RSVP line gets connected very soon.',
-  }),
+  telephone: telephoneCopy,
+}
+
+export type CardAction = 'rsvp' | 'suggest' | 'club' | 'back'
+
+const ACTIONS: Record<FixtureId, (scheduled: boolean) => CardAction[]> = {
+  bulletin: (scheduled) => (scheduled ? ['rsvp', 'club', 'back'] : ['club', 'back']),
+  suggestion: () => ['suggest', 'back'],
+  telephone: (scheduled) => (scheduled ? ['rsvp', 'back'] : ['club', 'back']),
+}
+
+export function cardActions(id: FixtureId, next: Screening | null): CardAction[] {
+  return ACTIONS[id](next !== null)
+}
+
+export function buttonRow(width: number, count: number): { width: number; xs: number[] } {
+  const inner = width * 0.86
+  const gap = width * 0.03
+  const button = (inner - gap * (count - 1)) / count
+  const xs = Array.from({ length: count }, (_, i) => -inner / 2 + button / 2 + i * (button + gap))
+  return { width: button, xs }
 }
 
 export function cardFor(id: FixtureId, next: Screening | null, now: Date): CardSpec {

@@ -3,19 +3,12 @@ import type { ReactNode } from 'react'
 import { AccountCard } from '../club/AccountCard'
 import { type DashboardView, dashboardView } from '../club/access'
 import { ScreeningsPanel } from '../club/admin/ScreeningsPanel'
+import { SuggestionsPanel } from '../club/admin/SuggestionsPanel'
 import { SignInForm } from '../club/SignInForm'
 import { useClubSession } from '../club/session'
 import { SiteHeader } from '../ui/SiteHeader'
 
 const PANELS = [
-  {
-    title: 'RSVPs',
-    detail: 'Everyone who called the RSVP line, with guests and notes. Only admins see this.',
-  },
-  {
-    title: 'Suggestions',
-    detail: 'Films pitched through the suggestion box, ready to shortlist, schedule or pass on.',
-  },
   {
     title: 'Polls',
     detail: 'When the club can’t decide, pin a poll to the bulletin board and let members vote.',
@@ -43,6 +36,7 @@ function Dashboard() {
         <AccountCard dashboardLink={false} />
       </header>
       <ScreeningsPanel />
+      <SuggestionsPanel />
       <div className="dashboard__grid">
         {PANELS.map((panel) => (
           <section key={panel.title} className="panel">
