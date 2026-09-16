@@ -42,6 +42,9 @@ Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
 - **Lobby:** click the bulletin board, suggestion box, or telephone, or use the buttons along the
   bottom. The camera pans to each one. Esc steps back. The catalog kiosk opens the search page and
   the New Releases sign opens Emby.
+- **Finding things:** a directory by the gate lists every genre and its aisle, banners hang over
+  each aisle naming what is down it, each 1-meter bay is signed with its genre and letter range
+  ("Drama A–B"), and letter tabs stand between tapes on the shelf.
 - **Enter the store** through the gate. Every movie faces out, shelved by genre on four
   double-sided 9-meter gondolas and along the lined walls. The right lobby wall holds the 160
   most recently added movies, the back wall holds TV on DVD, and the gondola ends show your

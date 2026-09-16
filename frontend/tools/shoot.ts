@@ -81,6 +81,31 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     console.log(`pick: ${report}`)
   },
   goto: (page, value) => page.goto(new URL(value, url).toString()),
+  count: async (page, value) => {
+    const report = await page.evaluate((name) => {
+      const scene = window.__three?.scene
+      if (!scene) {
+        return 'no debug handle'
+      }
+      const found: string[] = []
+      const walk = (node: {
+        name: string
+        count?: number
+        visible: boolean
+        children: unknown[]
+      }) => {
+        if (node.name === name) {
+          found.push(`count=${node.count ?? 1} visible=${node.visible}`)
+        }
+        for (const child of node.children) {
+          walk(child as typeof node)
+        }
+      }
+      walk(scene as unknown as Parameters<typeof walk>[0])
+      return found.length ? found.join(' | ') : 'not in scene'
+    }, value)
+    console.log(`${value}: ${report}`)
+  },
   wait: (page, value) => page.waitForTimeout(Number(value)),
   shot: async (page, value) => {
     await settle(page)
@@ -149,7 +174,7 @@ declare global {
     __scene?: Record<string, unknown>
     __renderStats?: Record<string, number>
     __three?: {
-      scene: { children: unknown[] }
+      scene: { children: unknown[]; name?: string }
       camera: unknown
       raycaster: {
         far: number

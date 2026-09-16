@@ -1,16 +1,19 @@
 import { useThree } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import type { AtlasIndex, Catalog, Collection, SiteInfo } from '../catalog/types'
+import { Directory } from '../lobby/Directory'
 import { Lobby } from '../lobby/Lobby'
 import { PlayerRig } from '../player/PlayerRig'
 import { sceneColliders } from '../scene/colliders'
 import { Lights } from '../theme/Lights'
+import { Banners } from './Banners'
 import { BoxDetail } from './BoxDetail'
+import { Dividers } from './Dividers'
 import { buildStorePlan } from './layout'
 import { Room } from './Room'
 import { ShelfBoxes, type ShelfGroup } from './ShelfInstances'
 import { Shelving } from './Shelving'
-import { ShelfSign } from './Signs'
+import { ShelfSigns } from './Signs'
 import { StoreFixtures } from './StoreFixtures'
 
 const PHONE_ATLAS_SIZE = 2048
@@ -50,12 +53,13 @@ export function StoreScene({ catalog, collections, site, atlasIndex, active }: P
       <Lights />
       <Room />
       {plan && <Shelving plan={plan} />}
+      {plan && <Dividers dividers={plan.dividers} />}
       <Suspense fallback={null}>
         <Lobby site={site} />
+        {plan && <Directory entries={plan.directory} />}
+        {plan && <Banners banners={plan.banners} />}
         <StoreFixtures site={site} />
-        {plan?.signs.map((sign) => (
-          <ShelfSign key={sign.id} sign={sign} />
-        ))}
+        {plan && <ShelfSigns signs={plan.signs} />}
       </Suspense>
       {catalog &&
         groups.map((group) => (

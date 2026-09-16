@@ -190,6 +190,23 @@ export const GENRE_RUNS: readonly RunSpec[] = [
   gondolaFace(3, 1),
 ]
 
+export interface Walkway {
+  id: string
+  label: string
+  x: number
+  runIds: readonly string[]
+}
+
+export const WALKWAYS: readonly Walkway[] = [
+  { id: 'aisle-1', label: 'Aisle 1', x: -5.3, runIds: ['wall-left', 'gondola-0-west'] },
+  { id: 'aisle-2', label: 'Aisle 2', x: -2.44, runIds: ['gondola-0-east', 'gondola-1-west'] },
+  { id: 'aisle-3', label: 'Aisle 3', x: 0, runIds: ['gondola-1-east', 'gondola-2-west'] },
+  { id: 'aisle-4', label: 'Aisle 4', x: 2.44, runIds: ['gondola-2-east', 'gondola-3-west'] },
+  { id: 'aisle-5', label: 'Aisle 5', x: 5.3, runIds: ['gondola-3-east', 'wall-right'] },
+]
+
+export const BANNER = { y: 2.5, z: GONDOLA.frontZ + 0.55 } as const
+
 export const NEW_RELEASES_SPEC: RunSpec = run(
   'new-releases',
   'new-releases',

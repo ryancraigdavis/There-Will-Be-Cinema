@@ -75,17 +75,20 @@ describe('buildStorePlan', () => {
     expect(genreSlots[1]?.position[2]).toBeLessThan(first?.position[2] ?? 0)
   })
 
-  it('signs where genres start and where a run picks one up', () => {
-    expect(plan.signs.map((sign) => sign.label)).toEqual([
-      'Drama',
-      'Drama',
-      'Action',
-      'Action',
-      OTHER_GENRE,
-      'New Releases',
-      'TV on DVD',
-      'Staff Picks',
-    ])
+  it('gives every bay one genre, signed with its letter range', () => {
+    const bays = plan.sections.filter((section) => section.run.kind === 'genre')
+    expect(bays.every((section) => section.labels.length === 1)).toBe(true)
+    const genreSigns = plan.signs.filter((sign) => sign.label !== 'New Releases')
+    expect(genreSigns[0]?.label).toBe('Drama D')
+    expect(genreSigns.filter((sign) => sign.label.startsWith('Action'))).toHaveLength(2)
+    expect(genreSigns.some((sign) => sign.label === 'More Movies E–T')).toBe(true)
+  })
+
+  it('names each aisle, lists it in the directory, and tabs the letters', () => {
+    expect(plan.banners.map((banner) => banner.label)).toContain('Aisle 3')
+    expect(plan.directory.map((entry) => entry.genre)).toEqual(['Action', 'Drama', 'More Movies'])
+    expect(plan.directory.find((entry) => entry.genre === 'Drama')?.aisle).toBe('Aisle 3')
+    expect(plan.dividers[0]?.letter).toBe('D')
   })
 
   it('keeps every tape on its own shelf run', () => {

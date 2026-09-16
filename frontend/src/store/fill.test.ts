@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fillRows, rowSlots, sectionSigns, sectionsFrom } from './fill'
+import { baySigns, fillRows, rowSlots, sectionsFrom } from './fill'
 import type { RunSpec } from './runs'
 
 const run = (id: string, columns: number, rows: number, sections = 1): RunSpec => ({
@@ -62,11 +62,25 @@ describe('sections and signs', () => {
     ])
   })
 
-  it('signs where a genre starts and where a run picks one up', () => {
-    const signs = sectionSigns(placements, 0.1)
-    expect(signs.map((s) => [s.id, s.label])).toEqual([
-      ['sign:one:0', 'Drama'],
-      ['sign:two:0', 'Drama · Horror'],
+  it('signs every bay with its genre and letter range', () => {
+    const signs = baySigns(sectionsFrom(placements), 0.1, (id) => id.charAt(0).toUpperCase())
+    expect(signs.map((sign) => [sign.id, sign.label])).toEqual([
+      ['sign:one:0', 'Drama D'],
+      ['sign:one:1', 'Drama D'],
+      ['sign:two:0', 'Drama · Horror D–H'],
     ])
+  })
+
+  it('starts a bay-aligned group on a fresh bay', () => {
+    const aligned = fillRows(
+      [
+        { label: 'Drama', itemIds: ids('d', 9) },
+        { label: 'Horror', itemIds: ids('h', 3) },
+      ],
+      rows,
+      true,
+    )
+    expect(aligned.placements.every((p) => p.label === 'Drama')).toBe(true)
+    expect(aligned.overflow).toEqual(['h0', 'h1', 'h2'])
   })
 })

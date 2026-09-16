@@ -1,4 +1,5 @@
 import { BULLETIN, COUNTER, GATE, KIOSK } from '../lobby/anchors'
+import { DIRECTORY } from '../lobby/Directory'
 import type { AABB } from '../player/collision'
 import { ROOM } from '../store/constants'
 import type { StorePlan } from '../store/layout'
@@ -22,6 +23,12 @@ export const LOBBY_COLLIDERS: readonly AABB[] = [
   { minX: COUNTER.minX, maxX: COUNTER.maxX, minZ: COUNTER.minZ, maxZ: COUNTER.maxZ },
   gatePost(GATE.x - GATE.halfWidth),
   gatePost(GATE.x + GATE.halfWidth),
+  {
+    minX: DIRECTORY.x - DIRECTORY.half,
+    maxX: DIRECTORY.x + DIRECTORY.half,
+    minZ: DIRECTORY.z - DIRECTORY.half,
+    maxZ: DIRECTORY.z + DIRECTORY.half,
+  },
   {
     minX: KIOSK.x - KIOSK.half,
     maxX: KIOSK.x + KIOSK.half,

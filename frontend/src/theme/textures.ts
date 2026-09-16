@@ -1,4 +1,5 @@
 import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from 'three'
+import { LETTER_GRID, LETTER_SHEET } from '../store/letters'
 import { PALETTE } from './palette'
 
 function rng(seed: number): () => number {
@@ -152,5 +153,22 @@ export const kioskTexture = cached(() =>
     ctx.fillStyle = PALETTE.cream
     ctx.font = '20px monospace'
     ctx.fillText('> TOUCH TO START_', 34, 190)
+  }),
+)
+
+export const letterTexture = cached(() =>
+  canvasTexture(512, 256, (ctx) => {
+    const cell = 64
+    ctx.fillStyle = PALETTE.cream
+    ctx.fillRect(0, 0, 512, 256)
+    ctx.fillStyle = PALETTE.rust
+    ctx.font = 'bold 54px "Arial Narrow", Arial, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    LETTER_SHEET.split('').forEach((letter, i) => {
+      const col = i % LETTER_GRID.cols
+      const row = Math.floor(i / LETTER_GRID.cols)
+      ctx.fillText(letter, col * cell + cell / 2, row * cell + cell / 2 + 2)
+    })
   }),
 )

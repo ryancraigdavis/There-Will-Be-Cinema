@@ -1,5 +1,6 @@
 import type { Vec3 } from '../scene/math'
 import type { Sign, Slot } from './geometry'
+import { letterRange } from './letters'
 import { type RunSpec, sectionCenter, sectionLength, signOn, slotOn } from './runs'
 
 export interface RowSlot {
@@ -38,14 +39,24 @@ export function rowSlots(runs: readonly RunSpec[]): RowSlot[] {
   )
 }
 
+function nextBay(rows: readonly RowSlot[], cursor: number): number {
+  let next = cursor
+  while (next < rows.length && rows[next]?.shelf !== 0) {
+    next += 1
+  }
+  return next
+}
+
 export function fillRows(
   groups: readonly ShelfGroupInput[],
   rows: readonly RowSlot[],
+  bayAligned = false,
 ): { placements: Placement[]; overflow: string[] } {
   const placements: Placement[] = []
   const overflow: string[] = []
   let cursor = 0
   for (const group of groups) {
+    cursor = bayAligned ? nextBay(rows, cursor) : cursor
     let remaining = [...group.itemIds]
     let starts = true
     while (remaining.length > 0 && cursor < rows.length) {
@@ -90,28 +101,22 @@ export function sectionsFrom(placements: readonly Placement[]): ShelfSection[] {
   return [...sections.values()]
 }
 
-const headsSection = (placement: Placement) =>
-  placement.starts || (placement.section === 0 && placement.shelf === 0)
-
-export function sectionSigns(placements: readonly Placement[], size: number): Sign[] {
-  const heads = new Map<string, { placement: Placement; labels: string[] }>()
-  for (const placement of placements.filter(headsSection)) {
-    const id = sectionId(placement)
-    const entry = heads.get(id) ?? { placement, labels: [] }
-    const labels = entry.labels.includes(placement.label)
-      ? entry.labels
-      : [...entry.labels, placement.label]
-    heads.set(id, { ...entry, labels })
-  }
-  return [...heads].map(([id, { placement, labels }]) => {
-    const width = sectionLength(placement.run)
+export function baySigns(
+  sections: readonly ShelfSection[],
+  size: number,
+  initialOf: (itemId: string) => string,
+): Sign[] {
+  return sections.map((section) => {
+    const width = sectionLength(section.run)
+    const initials = section.slots.map((slot) => initialOf(slot.itemId))
+    const label = [section.labels.join(' · '), letterRange(initials)].filter(Boolean).join(' ')
     return signOn(
-      placement.run,
-      (placement.section + 0.5) * width,
-      labels.join(' · '),
+      section.run,
+      (section.index + 0.5) * width,
+      label,
       size,
       width * 0.92,
-      `sign:${id}`,
+      `sign:${section.id}`,
     )
   })
 }
