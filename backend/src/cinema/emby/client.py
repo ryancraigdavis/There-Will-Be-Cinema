@@ -97,6 +97,17 @@ class EmbyClient:
             for item in page.get("Items", []):
                 yield item
 
+    async def all_ids(self, types: str = LIBRARY_TYPES, page_size: int = 1000) -> list[str]:
+        base = {"IncludeItemTypes": types, "Recursive": "true", "Fields": "", "Limit": page_size}
+        ids: list[str] = []
+        start, total = 0, 1
+        while start < total:
+            page = await self._items_page({**base, "StartIndex": start})
+            total = int(page.get("TotalRecordCount", 0))
+            start += page_size
+            ids.extend(str(item["Id"]) for item in page.get("Items", []))
+        return ids
+
     async def boxsets(self) -> list[dict]:
         page = await self._items_page(
             {

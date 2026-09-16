@@ -15,7 +15,8 @@ function specsLine(item: CatalogItem): string {
 }
 
 export const PosterCard = memo(function PosterCard({ item, href }: Props) {
-  const meta = metaLine(item)
+  const versions = item.versionCount > 1 ? `${item.versionCount} versions` : null
+  const meta = [metaLine(item), versions].filter(Boolean).join(' · ')
   return (
     <a className="card" href={href} target="_blank" rel="noopener noreferrer">
       <div className="card__box">

@@ -6,6 +6,7 @@ from pathlib import Path
 import structlog
 
 from cinema.db import repo
+from cinema.db.connection import SCHEMA_VERSION
 from cinema.emby.client import EmbyClient
 from cinema.emby.parse import flatten_collection, flatten_item
 from cinema.sync import atlas, posters
@@ -16,9 +17,16 @@ POSTER_CONCURRENCY = 4
 INCREMENTAL_OVERLAP = timedelta(hours=1)
 
 
+SCHEMA_KEY = "catalog_schema"
+
+
+def needs_backfill(conn: sqlite3.Connection) -> bool:
+    return repo.get_meta(conn, SCHEMA_KEY) != SCHEMA_VERSION
+
+
 def choose_mode(conn: sqlite3.Connection, requested: str | None) -> str:
-    empty = repo.item_count(conn) == 0
-    return requested or ("full" if empty else "incremental")
+    stale = repo.item_count(conn) == 0 or needs_backfill(conn)
+    return requested or ("full" if stale else "incremental")
 
 
 def since_for(conn: sqlite3.Connection, mode: str) -> str | None:
@@ -82,7 +90,8 @@ async def run_sync(
     log.info("sync_start", mode=mode, run_id=run_id)
     try:
         seen = await sync_items(conn, client, since_for(conn, mode))
-        removed = repo.mark_deleted_except(conn, seen) if mode == "full" else 0
+        live = seen if mode == "full" else await client.all_ids()
+        removed = repo.mark_deleted_except(conn, live)
         collections = await sync_collections(conn, client)
         fetched = await sync_posters(conn, client, data_dir)
         version = await rebuild_atlases(conn, data_dir)
@@ -93,6 +102,7 @@ async def run_sync(
     repo.finish_sync_run(
         conn, run_id, "ok", items_seen=len(seen), items_changed=removed, posters_fetched=fetched
     )
+    repo.set_meta(conn, SCHEMA_KEY, SCHEMA_VERSION) if mode == "full" else None
     summary = {
         "run_id": run_id,
         "mode": mode,

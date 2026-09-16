@@ -57,3 +57,26 @@ async def test_missing_level_is_rebuilt(conn, fake_emby, data_dir):
     missing.unlink()
     await run_sync(conn, fake_emby, data_dir)
     assert missing.exists()
+
+
+async def test_schema_change_forces_a_full_backfill(conn, fake_emby, data_dir):
+    await run_sync(conn, fake_emby, data_dir)
+    repo.set_meta(conn, "catalog_schema", "0")
+    summary = await run_sync(conn, fake_emby, data_dir)
+    assert summary["mode"] == "full"
+    assert repo.get_meta(conn, "catalog_schema") == "2"
+
+
+async def test_stores_file_details(conn, fake_emby, data_dir):
+    await run_sync(conn, fake_emby, data_dir)
+    row = conn.execute("SELECT width, file_size, container FROM items WHERE id='m1'").fetchone()
+    assert (row["width"], row["file_size"], row["container"]) == (3840, 50000000000, "mkv")
+
+
+async def test_incremental_sync_drops_items_removed_from_emby(conn, fake_emby, data_dir):
+    await run_sync(conn, fake_emby, data_dir)
+    fake_emby.items = [item for item in fake_emby.items if item["Id"] != "m2"]
+    summary = await run_sync(conn, fake_emby, data_dir)
+    assert summary["mode"] == "incremental"
+    assert summary["removed"] == 1
+    assert {row["id"] for row in repo.list_items(conn)} == {"m1", "m3", "s1"}

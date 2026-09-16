@@ -21,10 +21,20 @@ CREATE TABLE IF NOT EXISTS items (
     has_atmos INTEGER NOT NULL DEFAULT 0,
     has_dtsx INTEGER NOT NULL DEFAULT 0,
     audio_codec_summary TEXT,
+    width INTEGER,
+    height INTEGER,
+    file_size INTEGER,
+    container TEXT,
+    video_codec TEXT,
     child_count INTEGER,
     deleted INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_items_sort ON items (type, primary_genre, sort_title);
+
+CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS collections (
     id TEXT PRIMARY KEY,

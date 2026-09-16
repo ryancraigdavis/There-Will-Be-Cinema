@@ -80,6 +80,7 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     })
     console.log(`pick: ${report}`)
   },
+  goto: (page, value) => page.goto(new URL(value, url).toString()),
   wait: (page, value) => page.waitForTimeout(Number(value)),
   shot: async (page, value) => {
     await settle(page)

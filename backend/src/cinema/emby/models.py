@@ -54,6 +54,11 @@ class ItemRow(BaseModel, frozen=True):
     has_atmos: bool = False
     has_dtsx: bool = False
     audio_codec_summary: str | None = None
+    width: int | None = None
+    height: int | None = None
+    file_size: int | None = None
+    container: str | None = None
+    video_codec: str | None = None
     child_count: int | None = None
 
 

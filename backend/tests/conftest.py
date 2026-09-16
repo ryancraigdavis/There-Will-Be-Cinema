@@ -39,6 +39,9 @@ class FakeEmby:
         for item in self.items:
             yield item
 
+    async def all_ids(self, **_: object) -> list[str]:
+        return [str(item["Id"]) for item in self.items]
+
     async def boxsets(self) -> list[dict]:
         return [{k: v for k, v in b.items() if k != "children"} for b in self.boxsets_data]
 

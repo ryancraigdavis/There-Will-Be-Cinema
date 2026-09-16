@@ -20,6 +20,11 @@ export interface RawCatalogItem {
   at: boolean
   dx: boolean
   ac: string | null
+  w: number | null
+  h: number | null
+  sz: number | null
+  cn: string | null
+  vc: string | null
   cc: number | null
   ov: string | null
   g: string[]
@@ -58,6 +63,12 @@ export interface CatalogItem {
   atmos: boolean
   dtsx: boolean
   audio: string | null
+  width: number | null
+  height: number | null
+  fileSize: number | null
+  container: string | null
+  videoCodec: string | null
+  versionCount: number
   childCount: number | null
   overview: string | null
   imdb: string | null
@@ -68,6 +79,7 @@ export interface Catalog {
   atlasVersion: string
   items: CatalogItem[]
   byId: Map<string, CatalogItem>
+  versionsById: Map<string, CatalogItem[]>
 }
 
 export interface RawCollection {

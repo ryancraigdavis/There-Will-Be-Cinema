@@ -19,6 +19,11 @@ _KEYS = {
     "at": "has_atmos",
     "dx": "has_dtsx",
     "ac": "audio_codec_summary",
+    "w": "width",
+    "h": "height",
+    "sz": "file_size",
+    "cn": "container",
+    "vc": "video_codec",
     "cc": "child_count",
     "ov": "overview",
 }

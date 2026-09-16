@@ -28,6 +28,11 @@ _ITEM_COLUMNS = (
     "has_atmos",
     "has_dtsx",
     "audio_codec_summary",
+    "width",
+    "height",
+    "file_size",
+    "container",
+    "video_codec",
     "child_count",
 )
 _JSON_COLUMNS = {"genres", "tags", "provider_ids"}
@@ -102,6 +107,20 @@ def list_collections(conn: sqlite3.Connection) -> list[dict]:
     for link in links:
         by_col.setdefault(link["collection_id"], []).append(link["item_id"])
     return [{**dict(c), "item_ids": by_col[c["id"]]} for c in cols]
+
+
+def get_meta(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else None
+
+
+def set_meta(conn: sqlite3.Connection, key: str, value: str) -> None:
+    with conn:
+        conn.execute(
+            "INSERT INTO meta (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, value),
+        )
 
 
 def item_count(conn: sqlite3.Connection) -> int:

@@ -145,6 +145,11 @@ def flatten_item(raw: dict) -> ItemRow:
         has_atmos=any(a.is_atmos for a in audios),
         has_dtsx=any(a.is_dts_x for a in audios),
         audio_codec_summary=_audio_summary(media.primary_audio if media else None),
+        width=video.width if video else None,
+        height=video.height if video else None,
+        file_size=media.file_size if media else None,
+        container=media.container if media else None,
+        video_codec=video.codec if video else None,
         child_count=raw.get("ChildCount"),
     )
 

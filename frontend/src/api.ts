@@ -10,6 +10,7 @@ import type {
   RawSite,
   SiteInfo,
 } from './catalog/types'
+import { groupFilms } from './catalog/versions'
 import { API_BASE } from './config'
 
 export function toItem(raw: RawCatalogItem): CatalogItem {
@@ -33,6 +34,12 @@ export function toItem(raw: RawCatalogItem): CatalogItem {
     atmos: raw.at,
     dtsx: raw.dx,
     audio: raw.ac,
+    width: raw.w,
+    height: raw.h,
+    fileSize: raw.sz,
+    container: raw.cn,
+    videoCodec: raw.vc,
+    versionCount: 1,
     childCount: raw.cc,
     overview: raw.ov,
     imdb: raw.imdb,
@@ -41,8 +48,14 @@ export function toItem(raw: RawCatalogItem): CatalogItem {
 }
 
 export function toCatalog(raw: RawCatalog): Catalog {
-  const items = raw.items.map(toItem)
-  return { atlasVersion: raw.atlas, items, byId: new Map(items.map((item) => [item.id, item])) }
+  const films = groupFilms(raw.items.map(toItem))
+  const items = films.map((film) => film.item)
+  return {
+    atlasVersion: raw.atlas,
+    items,
+    byId: new Map(items.map((item) => [item.id, item])),
+    versionsById: new Map(films.map((film) => [film.item.id, film.versions])),
+  }
 }
 
 export function toSite(raw: RawSite): SiteInfo {

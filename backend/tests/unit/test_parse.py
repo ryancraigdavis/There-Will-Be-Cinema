@@ -122,3 +122,10 @@ def test_flatten_no_media(emby_items):
 def test_flatten_series(emby_items):
     row = flatten_item(emby_items[3])
     assert (row.type, row.child_count, row.primary_genre) == ("Series", 30, "Mystery")
+
+
+def test_flatten_keeps_file_details(emby_items):
+    row = flatten_item(emby_items[0])
+    assert (row.width, row.height) == (3840, 2160)
+    assert row.file_size == 50000000000
+    assert (row.container, row.video_codec) == ("mkv", "hevc")

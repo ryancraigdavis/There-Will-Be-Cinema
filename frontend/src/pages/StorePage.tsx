@@ -1,5 +1,6 @@
 import '../ui/store.css'
 import { useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router'
 import {
   readyValue,
   useAtlasIndex,
@@ -29,6 +30,30 @@ function supportsWebGL2(): boolean {
   }
 }
 
+function useTapeLink(ready: boolean, known: (id: string) => boolean) {
+  const [params] = useSearchParams()
+  const tape = params.get('tape')
+
+  useEffect(() => {
+    const scene = useScene.getState()
+    if (!ready || !tape || !known(tape) || scene.mode !== 'intro') {
+      return
+    }
+    scene.dispatch('enter')
+    scene.dispatch('walk')
+  }, [ready, tape, known])
+
+  useEffect(
+    () =>
+      useScene.subscribe((state) => {
+        if (tape && state.mode === 'free' && !state.selected && known(tape)) {
+          useScene.getState().select(tape)
+        }
+      }),
+    [tape, known],
+  )
+}
+
 export function StorePage({ active }: { active: boolean }) {
   const catalog = readyValue(useCatalog())
   const site = readyValue(useSite())
@@ -37,6 +62,8 @@ export function StorePage({ active }: { active: boolean }) {
   const collections =
     collectionsResource.status === 'loading' ? null : (readyValue(collectionsResource) ?? [])
   const webgl = useMemo(supportsWebGL2, [])
+  const known = useMemo(() => (id: string) => catalog?.byId.has(id) ?? false, [catalog])
+  useTapeLink(catalog !== null, known)
 
   useEffect(() => {
     const publish = (state: ReturnType<typeof useScene.getState>) => {
