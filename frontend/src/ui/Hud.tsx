@@ -6,6 +6,7 @@ import { enterStore } from '../lobby/Lobby'
 import type { RigMode } from '../player/cameraRig'
 import { releaseLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
+import { openGuide } from './Guide'
 import { ExternalMark } from './icons'
 
 const LOBBY_HINTS: Partial<Record<RigMode, string>> = {
@@ -38,6 +39,9 @@ function HudBar({ site, inStore }: { site: SiteInfo | null; inStore: boolean }) 
         <span>Catalog</span>
       </Link>
       <div className="hud__links">
+        <button type="button" className="chip" onClick={openGuide}>
+          Find a movie · M
+        </button>
         {inStore && (
           <button type="button" className="chip" onClick={backToCounter}>
             Back to the counter

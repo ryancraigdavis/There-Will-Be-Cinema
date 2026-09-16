@@ -44,8 +44,19 @@ const TARGETS: Record<RigMode, (focus: FixtureId | null) => AnchorId | null> = {
   free: () => null,
 }
 
+const ARRIVE: Partial<Record<RigMode, (scene: Scene) => void>> = {
+  entering: (scene) => scene.dispatch('arrived'),
+}
+
 const FOV_RATE = 3
 const MAX_FRAME_SECONDS = 0.1
+
+function arriveNow(scene: Scene, pending: string | null) {
+  ARRIVE[scene.mode]?.(scene)
+  if (pending) {
+    scene.select(pending)
+  }
+}
 
 function takeLook(input: RoamInput): [number, number] {
   const delta: [number, number] = [input.dx, input.dy]
@@ -111,14 +122,25 @@ export function PlayerRig({ colliders, active }: Props) {
   const canvas = useScene((state) => state.canvas)
   const mode = useScene((state) => state.mode)
   const focus = useScene((state) => state.focus)
+  const travel = useScene((state) => state.travel)
   const input = useFreeRoamInput(canvas, active)
   const pose = useRef<Pose>(ANCHORS.counter)
   const transition = useRef<Transition | null>(null)
+  const arriveWith = useRef<string | null>(null)
   const target = TARGETS[mode](focus)
 
   useEffect(() => {
     transition.current = target ? startTransition(pose.current, ANCHORS[target]) : null
   }, [target])
+
+  useEffect(() => {
+    if (!travel || mode !== 'free') {
+      return
+    }
+    transition.current = startTransition(pose.current, travel.pose)
+    arriveWith.current = travel.itemId
+    useScene.getState().setTravel(null)
+  }, [travel, mode])
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, MAX_FRAME_SECONDS)
@@ -129,8 +151,9 @@ export function PlayerRig({ colliders, active }: Props) {
     const result = stepRig(context, transition.current)
     pose.current = result.pose
     transition.current = result.transition
-    if (result.arrived && scene.mode === 'entering') {
-      scene.dispatch('arrived')
+    if (result.arrived) {
+      arriveNow(scene, arriveWith.current)
+      arriveWith.current = null
     }
     applyPose(camera, result.pose)
     easeFov(camera, fovFor(scene.mode, state.viewport.aspect), dt)

@@ -1,7 +1,6 @@
 import { useThree } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
-import type { AtlasIndex, Catalog, Collection, SiteInfo } from '../catalog/types'
-import { Directory } from '../lobby/Directory'
+import type { AtlasIndex, Catalog, SiteInfo } from '../catalog/types'
 import { Lobby } from '../lobby/Lobby'
 import { PlayerRig } from '../player/PlayerRig'
 import { sceneColliders } from '../scene/colliders'
@@ -10,7 +9,7 @@ import { Lights } from '../theme/Lights'
 import { Banners } from './Banners'
 import { BoxDetail } from './BoxDetail'
 import { Dividers } from './Dividers'
-import { buildStorePlan } from './layout'
+import type { StorePlan } from './layout'
 import { Room } from './Room'
 import { ShelfBoxes, type ShelfGroup } from './ShelfInstances'
 import { Shelving } from './Shelving'
@@ -22,7 +21,7 @@ const DESKTOP_ATLAS_SIZE = 4096
 
 interface Props {
   catalog: Catalog | null
-  collections: Collection[] | null
+  plan: StorePlan | null
   site: SiteInfo | null
   atlasIndex: AtlasIndex | null
   active: boolean
@@ -37,12 +36,8 @@ function useMaxAtlasSize(): number {
   }, [gl])
 }
 
-export function StoreScene({ catalog, collections, site, atlasIndex, active }: Props) {
+export function StoreScene({ catalog, plan, site, atlasIndex, active }: Props) {
   const maxAtlasSize = useMaxAtlasSize()
-  const plan = useMemo(
-    () => (catalog && collections ? buildStorePlan(catalog.items, collections) : null),
-    [catalog, collections],
-  )
   const colliders = useMemo(() => sceneColliders(plan), [plan])
   const groups = useMemo<ShelfGroup[]>(
     () => (plan?.sections ?? []).map(({ id, slots, center }) => ({ id, slots, center })),
@@ -58,7 +53,6 @@ export function StoreScene({ catalog, collections, site, atlasIndex, active }: P
       <Suspense fallback={null}>
         <Lobby site={site} />
         <Decor />
-        {plan && <Directory entries={plan.directory} />}
         {plan && <Banners banners={plan.banners} />}
         <StoreFixtures site={site} />
         {plan && <ShelfSigns signs={plan.signs} />}

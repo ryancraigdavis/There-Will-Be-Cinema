@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { catalogFixture } from '../test/fixtures'
-import { buildIndex, normalizeTerm, rankIds } from './search'
+import { catalogFixture, item } from '../test/fixtures'
+import { bestMatches, buildIndex, matchTier, normalizeTerm, rankIds } from './search'
 
 const index = buildIndex(catalogFixture().items)
 
@@ -24,5 +24,23 @@ describe('rankIds', () => {
 describe('normalizeTerm', () => {
   it('lowercases and strips diacritics', () => {
     expect(normalizeTerm('Amélie')).toBe('amelie')
+  })
+})
+
+describe('matchTier', () => {
+  it.each([
+    ['exact', 'Alien', 'alien', 0],
+    ['prefix', 'Aliens', 'alien', 1],
+    ['contains', 'Cowboys & Aliens', 'alien', 2],
+    ['fuzzy only', 'Alfie', 'alien', 3],
+  ])('%s', (_name, title, term, expected) => {
+    expect(matchTier(title, term)).toBe(expected)
+  })
+})
+
+describe('bestMatches', () => {
+  it('lifts the exact title above looser hits without reshuffling a tier', () => {
+    const hits = [item('aliens'), item('amelie'), item('alien')]
+    expect(bestMatches(hits, 'alien').map((film) => film.id)).toEqual(['alien', 'aliens', 'amelie'])
   })
 })

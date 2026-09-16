@@ -122,19 +122,65 @@ function Popping({ run }: { run: number }) {
   })
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, KERNELS]} position={[0, 0.82, 0]}>
+    <instancedMesh ref={mesh} args={[undefined, undefined, KERNELS]} position={[0, 0.26, 0]}>
       <sphereGeometry args={[0.014, 6, 5]} />
       <meshLambertMaterial color="#fff3d0" />
     </instancedMesh>
   )
 }
 
+const DECK = 1.02
+const CART = { width: 0.68, depth: 0.52 } as const
+const WHEELS: [number, number][] = [
+  [-0.28, 0.18],
+  [0.28, 0.18],
+  [-0.28, -0.18],
+  [0.28, -0.18],
+]
+const LEGS: [number, number][] = [
+  [-0.27, 0.19],
+  [0.27, 0.19],
+  [-0.27, -0.19],
+  [0.27, -0.19],
+]
+
+function Cart() {
+  return (
+    <>
+      {WHEELS.map(([x, z]) => (
+        <mesh key={`w${x}:${z}`} position={[x, 0.075, z]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.075, 0.075, 0.04, 14]} />
+          <meshLambertMaterial color={PALETTE.ink} />
+        </mesh>
+      ))}
+      {LEGS.map(([x, z]) => (
+        <mesh key={`l${x}:${z}`} position={[x, DECK / 2 + 0.06, z]}>
+          <boxGeometry args={[0.05, DECK - 0.12, 0.05]} />
+          <meshLambertMaterial color={PALETTE.rustBright} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.44, 0]}>
+        <boxGeometry args={[0.58, 0.04, 0.42]} />
+        <meshLambertMaterial color={PALETTE.rust} />
+      </mesh>
+      <mesh position={[0, DECK - 0.03, 0]}>
+        <boxGeometry args={[CART.width, 0.06, CART.depth]} />
+        <meshLambertMaterial color={PALETTE.rustBright} />
+      </mesh>
+      <mesh position={[0, DECK - 0.075, 0]}>
+        <boxGeometry args={[CART.width + 0.02, 0.03, CART.depth + 0.02]} />
+        <meshLambertMaterial color={PALETTE.gold} />
+      </mesh>
+    </>
+  )
+}
+
 function CaseFrame() {
   const posts: Vec3[] = [
-    [-0.29, 0.82, 0.23],
-    [0.29, 0.82, 0.23],
-    [-0.29, 0.82, -0.23],
-    [0.29, 0.82, -0.23],
+    [-0.29, 0.26, 0.23],
+    [0.29, 0.26, 0.23],
+    [-0.29, 0.26, -0.23],
+    [0.29, 0.26, -0.23],
   ]
   return (
     <>
@@ -144,13 +190,13 @@ function CaseFrame() {
           <meshLambertMaterial color={PALETTE.gold} />
         </mesh>
       ))}
-      {[0.56, 1.08].map((y) => (
+      {[0, 0.52].map((y) => (
         <mesh key={y} position={[0, y, 0]}>
           <boxGeometry args={[0.62, 0.035, 0.5]} />
           <meshLambertMaterial color={PALETTE.gold} />
         </mesh>
       ))}
-      <mesh position={[0, 0.82, 0]}>
+      <mesh position={[0, 0.26, 0]}>
         <boxGeometry args={[0.58, 0.5, 0.46]} />
         <meshBasicMaterial color="#cfe6ef" transparent opacity={0.16} depthWrite={false} />
       </mesh>
@@ -159,47 +205,36 @@ function CaseFrame() {
 }
 
 export function PopcornMachine({ onPop, pops }: { onPop: () => void; pops: number }) {
-  const pile = useMemo(() => heap(120, 3, [0.52, 0.17, 0.4], [0, 0.6, 0]), [])
+  const pile = useMemo(() => heap(120, 3, [0.52, 0.17, 0.4], [0, 0.04, 0]), [])
   return (
     <group position={[POPCORN.x, 0, POPCORN.z]} rotation={[0, POPCORN.yaw, 0]} onClick={onPop}>
-      {[-0.24, 0.24].map((x) => (
-        <mesh key={x} position={[x, 0.14, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.13, 0.13, 0.05, 16]} />
-          <meshLambertMaterial color={PALETTE.ink} />
+      <Cart />
+      <group position={[0, DECK, 0]}>
+        <CaseFrame />
+        <Cluster points={pile} radius={0.018} colors={['#fff3d0', '#f7e6b8']} />
+        <mesh position={[0, 0.44, 0]}>
+          <boxGeometry args={[0.24, 0.1, 0.2]} />
+          <meshLambertMaterial color={PALETTE.steel} />
         </mesh>
-      ))}
-      <mesh position={[0, 0.4, 0]}>
-        <boxGeometry args={[0.64, 0.42, 0.52]} />
-        <meshLambertMaterial color={PALETTE.rustBright} />
-      </mesh>
-      <mesh position={[0, 0.2, 0.263]}>
-        <boxGeometry args={[0.64, 0.05, 0.01]} />
-        <meshLambertMaterial color={PALETTE.gold} />
-      </mesh>
-      <CaseFrame />
-      <Cluster points={pile} radius={0.018} colors={['#fff3d0', '#f7e6b8']} />
-      <mesh position={[0, 1.0, 0]}>
-        <boxGeometry args={[0.24, 0.1, 0.2]} />
-        <meshLambertMaterial color={PALETTE.steel} />
-      </mesh>
-      <mesh position={[0, 1.06, 0]}>
-        <boxGeometry args={[0.3, 0.012, 0.24]} />
-        <meshBasicMaterial color="#ffdf9a" />
-      </mesh>
-      <Popping run={pops} />
-      <mesh position={[0, 1.28, 0]}>
-        <boxGeometry args={[0.66, 0.24, 0.05]} />
-        <meshLambertMaterial color={PALETTE.rust} />
-      </mesh>
-      <Text
-        font={FONTS.display}
-        position={[0, 1.28, 0.03]}
-        fontSize={0.1}
-        letterSpacing={0.14}
-        color={PALETTE.gold}
-      >
-        POPCORN
-      </Text>
+        <mesh position={[0, 0.5, 0]}>
+          <boxGeometry args={[0.3, 0.012, 0.24]} />
+          <meshBasicMaterial color="#ffdf9a" />
+        </mesh>
+        <Popping run={pops} />
+        <mesh position={[0, 0.72, 0]}>
+          <boxGeometry args={[0.66, 0.24, 0.05]} />
+          <meshLambertMaterial color={PALETTE.rust} />
+        </mesh>
+        <Text
+          font={FONTS.display}
+          position={[0, 0.72, 0.03]}
+          fontSize={0.1}
+          letterSpacing={0.14}
+          color={PALETTE.gold}
+        >
+          POPCORN
+        </Text>
+      </group>
     </group>
   )
 }
@@ -275,8 +310,8 @@ export function GumballMachine({ onTurn, turns }: { onTurn: () => void; turns: n
 }
 
 const POPCORN_GLOW: Glow = {
-  center: [POPCORN.x, 0.7, POPCORN.z],
-  size: [0.8, 1.6, 0.7],
+  center: [POPCORN.x, 0.95, POPCORN.z],
+  size: [0.8, 1.9, 0.7],
   yaw: POPCORN.yaw,
 }
 const GUMBALL_GLOW: Glow = {

@@ -43,9 +43,11 @@ function Wall({ x, z, length, yaw }: { x: number; z: number; length: number; yaw
   )
 }
 
+const DOOR_X = 0.6
+
 function FrontDoor() {
   return (
-    <group position={[-3.6, 0, ROOM.maxZ - 0.01]}>
+    <group position={[DOOR_X, 0, ROOM.maxZ - 0.01]}>
       <mesh position={[0, 1.1, -0.02]}>
         <boxGeometry args={[2.1, 2.3, 0.06]} />
         <meshLambertMaterial color={PALETTE.steel} />

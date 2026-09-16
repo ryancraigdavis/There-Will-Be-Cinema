@@ -55,7 +55,8 @@ function resume() {
 export function PauseOverlay() {
   const paused = useScene((state) => state.paused)
   const mode = useScene((state) => state.mode)
-  return !paused || mode !== 'free' ? null : (
+  const guide = useScene((state) => state.guide)
+  return !paused || guide || mode !== 'free' ? null : (
     <div className="pause">
       <section className="pause__panel" aria-labelledby="pause-title">
         <h2 id="pause-title" className="pause__title">

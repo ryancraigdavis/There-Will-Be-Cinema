@@ -11,7 +11,9 @@ import {
 import { releaseLock } from '../player/pointerLock'
 import { SceneShell } from '../shell/SceneShell'
 import { useScene } from '../shell/sceneState'
+import { buildStorePlan } from '../store/layout'
 import { StoreScene } from '../store/StoreScene'
+import { Guide } from '../ui/Guide'
 import { Hud } from '../ui/Hud'
 import { IntroOverlay, PauseOverlay } from '../ui/Overlays'
 import { TouchControls } from '../ui/TouchControls'
@@ -61,6 +63,10 @@ export function StorePage({ active }: { active: boolean }) {
   const collectionsResource = useCollections()
   const collections =
     collectionsResource.status === 'loading' ? null : (readyValue(collectionsResource) ?? [])
+  const plan = useMemo(
+    () => (catalog && collections ? buildStorePlan(catalog.items, collections) : null),
+    [catalog, collections],
+  )
   const webgl = useMemo(supportsWebGL2, [])
   const known = useMemo(() => (id: string) => catalog?.byId.has(id) ?? false, [catalog])
   useTapeLink(catalog !== null, known)
@@ -85,6 +91,7 @@ export function StorePage({ active }: { active: boolean }) {
       releaseLock()
       const scene = useScene.getState()
       scene.setHover(null)
+      scene.setGuide(false)
       scene.setPaused(scene.mode === 'free')
     }
   }, [active])
@@ -96,7 +103,7 @@ export function StorePage({ active }: { active: boolean }) {
           <SceneShell active={active}>
             <StoreScene
               catalog={catalog}
-              collections={collections}
+              plan={plan}
               site={site}
               atlasIndex={atlasIndex}
               active={active}
@@ -105,6 +112,7 @@ export function StorePage({ active }: { active: boolean }) {
         </div>
       )}
       <Hud site={site} />
+      <Guide catalog={catalog} plan={plan} active={active} />
       <IntroOverlay catalog={catalog} site={site} webgl={webgl} />
       <TouchControls />
       <PauseOverlay />

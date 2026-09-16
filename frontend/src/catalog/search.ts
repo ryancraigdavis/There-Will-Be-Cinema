@@ -38,3 +38,19 @@ export function rankIds(index: TitleIndex, query: string): string[] | null {
   const trimmed = query.trim()
   return trimmed === '' ? null : index.search(trimmed).map((hit) => String(hit.id))
 }
+
+const MATCH_TIERS: ((title: string, term: string) => boolean)[] = [
+  (title, term) => title === term,
+  (title, term) => title.startsWith(term),
+  (title, term) => title.includes(term),
+]
+
+export function matchTier(title: string, term: string): number {
+  const tier = MATCH_TIERS.findIndex((test) => test(normalizeTerm(title), term))
+  return tier === -1 ? MATCH_TIERS.length : tier
+}
+
+export function bestMatches(items: readonly CatalogItem[], query: string): CatalogItem[] {
+  const term = normalizeTerm(query.trim())
+  return [...items].sort((a, b) => matchTier(a.title, term) - matchTier(b.title, term))
+}

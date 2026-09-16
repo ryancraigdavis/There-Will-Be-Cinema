@@ -42,20 +42,25 @@ Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
 - **Lobby:** click the bulletin board, suggestion box, or telephone, or use the buttons along the
   bottom. The camera pans to each one. Esc steps back. The catalog kiosk opens the search page and
   the New Releases sign opens Emby.
-- **Props:** the popcorn machine pops a batch when you click it and the gumball machine turns its
-  crank and drops a gumball into the tray; neither one leads anywhere. An oil derrick stands in the
-  left corner of the lobby, the There Will Be Blood poster and a Paul Thomas Anderson portrait hang
-  by New Releases, and two oilfield paintings flank a lit THERE WILL BE CINEMA sign on the back wall
-  of the store.
-- **Finding things:** a directory by the gate lists every genre and its aisle, banners hang over
-  each aisle naming what is down it, each 1-meter bay is signed with its genre and letter range
-  ("Drama A–B"), and letter tabs stand between tapes on the shelf.
+- **Props:** the popcorn cart beside the counter pops a batch when you click it and the gumball
+  machine turns its crank and drops a gumball into the tray; neither one leads anywhere. An oil
+  derrick stands off the left corner of the lobby, the There Will Be Blood poster and a Paul Thomas
+  Anderson portrait hang by New Releases, and two oilfield paintings flank a lit THERE WILL BE
+  CINEMA sign on the back wall of the store.
+- **Finding things:** press **M** (or the *Find a movie* button) to drop the store guide over the
+  scene. Search every title — fuzzy, typo-tolerant, exact matches first — and each hit shows where
+  it lives ("Horror #–B · Aisle 4"). Pick one and you walk to that shelf with the tape already
+  pulled out; Enter takes the top hit. With the box empty the guide lists the directory, so
+  picking a genre walks you to the front of its section. Esc closes it.
+- **Signs:** banners hang over each aisle naming what is down it, each 1-meter bay is signed with
+  its genre and letter range ("Drama A–B"), and letter tabs stand between tapes on the shelf.
 - **Enter the store** through the gate. Every movie faces out, shelved by genre on four
   double-sided 9-meter gondolas and along the lined walls. The right lobby wall holds the 160
   most recently added movies, the back wall holds TV on DVD, and the gondola ends show your
   biggest Emby collections. There is room for about 4,400 movies before titles stop fitting.
-- **Walking:** WASD or arrow keys, Shift to run, mouse to look. The browser locks the pointer; Esc
-  pauses. Without pointer lock, drag to look. On touch screens, use the left stick and drag to look.
+- **Walking:** WASD or arrow keys, Shift to run, mouse to look, M for the guide. The browser locks
+  the pointer; Esc pauses. Without pointer lock, drag to look. On touch screens, use the left stick
+  and drag to look.
 - **Tapes:** hover for the title, click to pull one off the shelf, then Watch on Emby or put it back.
 - **Versions:** a film you own twice (4K and 1080p, theatrical and extended) sits on the shelf
   once. The panel picks the best copy and lists the others, and Watch on Emby opens the one

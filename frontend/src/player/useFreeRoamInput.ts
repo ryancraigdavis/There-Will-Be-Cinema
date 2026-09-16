@@ -32,6 +32,9 @@ function isTyping(target: EventTarget | null): boolean {
 
 function handleKeyDown(event: KeyboardEvent, input: RoamInput) {
   const scene = useScene.getState()
+  if (scene.guide) {
+    return
+  }
   if (event.code === 'Escape') {
     ESCAPE[scene.mode]?.(scene)
   }

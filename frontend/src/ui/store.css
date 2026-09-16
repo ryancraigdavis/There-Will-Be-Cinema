@@ -306,3 +306,120 @@
     bottom: 136px;
   }
 }
+
+.guide {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 20px var(--gutter);
+  background: rgb(12 5 4 / 0.78);
+  backdrop-filter: blur(3px);
+}
+
+.guide__panel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 14px;
+  width: min(820px, 100%);
+  max-height: min(80vh, 760px);
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--gold);
+  border-radius: var(--radius);
+}
+
+.guide__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.guide__name {
+  margin: 0;
+  font: 600 24px / 1 var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.guide__lists {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.guide__lists > section {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.guide__heading {
+  margin: 0 0 8px;
+  font: 500 12px / 1 var(--font-display);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sunset);
+}
+
+.guide__list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--cream);
+  background: rgb(1 4 4 / 0.35);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.guide__row:hover:not(:disabled),
+.guide__row:focus-visible:not(:disabled) {
+  color: var(--gold);
+  border-color: var(--sunset);
+}
+
+.guide__row:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.guide__title {
+  font: 500 15px / 1.25 var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+.guide__year {
+  color: var(--text-muted);
+}
+
+.guide__where {
+  font: 500 11px / 1.2 var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.guide__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}

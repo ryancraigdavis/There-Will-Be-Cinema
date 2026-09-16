@@ -4,7 +4,7 @@ import { Quaternion, Vector3 } from 'three'
 import type { Vec3 } from '../scene/math'
 import { FONTS } from '../theme/fonts'
 import { PALETTE } from '../theme/palette'
-import { DERRICK } from './anchors'
+import { DERRICK, GATE } from './anchors'
 
 const HEIGHT = 2.8
 const BASE = 0.5
@@ -22,6 +22,11 @@ const SIDES: [number, number][] = [
   [1, -1],
 ]
 const UP = new Vector3(0, 1, 0)
+const PLAQUE = {
+  out: 0.62,
+  y: 0.5,
+  yaw: Math.atan2(GATE.x - DERRICK.x, GATE.z - DERRICK.z) - DERRICK.yaw,
+} as const
 
 function corner(height: number, sx: number, sz: number): Vec3 {
   const half = BASE + (TOP - BASE) * height
@@ -118,22 +123,27 @@ export function Derrick() {
         <cylinderGeometry args={[0.03, 0.03, 0.14, 8]} />
         <meshLambertMaterial color={PALETTE.gold} />
       </mesh>
-      <group position={[0, 0.5, 0.62]} rotation={[-0.32, 0, 0]}>
-        <mesh>
-          <boxGeometry args={[0.5, 0.26, 0.03]} />
-          <meshLambertMaterial color={PALETTE.ink} />
-        </mesh>
-        <Text
-          font={FONTS.display}
-          position={[0, 0, 0.02]}
-          fontSize={0.052}
-          letterSpacing={0.1}
-          maxWidth={0.44}
-          textAlign="center"
-          color={PALETTE.gold}
-        >
-          THERE WILL BE BLOOD
-        </Text>
+      <group
+        position={[Math.sin(PLAQUE.yaw) * PLAQUE.out, PLAQUE.y, Math.cos(PLAQUE.yaw) * PLAQUE.out]}
+        rotation={[0, PLAQUE.yaw, 0]}
+      >
+        <group rotation={[-0.32, 0, 0]}>
+          <mesh>
+            <boxGeometry args={[0.5, 0.26, 0.03]} />
+            <meshLambertMaterial color={PALETTE.ink} />
+          </mesh>
+          <Text
+            font={FONTS.display}
+            position={[0, 0, 0.02]}
+            fontSize={0.052}
+            letterSpacing={0.1}
+            maxWidth={0.44}
+            textAlign="center"
+            color={PALETTE.gold}
+          >
+            THERE WILL BE BLOOD
+          </Text>
+        </group>
       </group>
     </group>
   )
