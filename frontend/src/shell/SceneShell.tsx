@@ -90,7 +90,10 @@ export function SceneShell({ active, children }: { active: boolean; children: Re
       gl={{ antialias: true, powerPreference: 'high-performance' }}
       camera={{ fov: 70, near: 0.05, far: 60, position: [...ANCHORS.counter.position] }}
       events={lockAwareEvents}
-      onCreated={({ gl }) => setCanvas(gl.domElement)}
+      onCreated={({ gl }) => {
+        gl.debug.checkShaderErrors = import.meta.env.DEV
+        setCanvas(gl.domElement)
+      }}
     >
       <color attach="background" args={['#0c0504']} />
       <fog attach="fog" args={['#120705', 16, 40]} />

@@ -20,7 +20,7 @@ import { cellOrigin, cellSize, groupSlotsByAtlas } from './batches'
 import { createBoxMaterial } from './boxMaterial'
 import { BOX } from './constants'
 import type { Slot } from './geometry'
-import { availableLevels, levelFor, PICK_DISTANCE } from './lod'
+import { availableLevels, levelFor, PICK_DISTANCE, STILL_METRES } from './lod'
 
 export interface ShelfGroup {
   id: string
@@ -72,18 +72,23 @@ function useLod(center: Vec3, index: AtlasIndex | null, maxSize: number) {
     pickable: false,
   })
   const frame = useRef(staggerOf(center))
+  const last = useRef(new Vector3(Number.POSITIVE_INFINITY, 0, 0))
 
   useFrame(({ camera }) => {
     frame.current = (frame.current + 1) % LOD_INTERVAL_FRAMES
     if (frame.current !== 0) {
       return
     }
+    const settled = camera.position.distanceTo(last.current) < STILL_METRES
+    last.current.copy(camera.position)
     const distance = camera.position.distanceTo(scratch.set(center[0], center[1], center[2]))
-    const size = levelFor(distance, levels, maxSize)
     const pickable = distance <= PICK_DISTANCE
-    setLod((previous) =>
-      previous.size === size && previous.pickable === pickable ? previous : { size, pickable },
-    )
+    setLod((previous) => {
+      const size = levelFor(distance, levels, maxSize, { settled, current: previous.size })
+      return previous.size === size && previous.pickable === pickable
+        ? previous
+        : { size, pickable }
+    })
   })
 
   return lod

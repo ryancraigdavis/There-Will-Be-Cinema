@@ -8,6 +8,7 @@ import { useClubSession } from '../club/session'
 import type { Screening } from '../club/types'
 import { requestLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
+import { useWarmup, warmedUp } from '../shell/warmup'
 import { backToCounter } from './Hud'
 import { ExternalMark } from './icons'
 import { openAccount, openRsvp } from './Sheets'
@@ -45,6 +46,16 @@ function EnterButton({ webgl }: { webgl: boolean }) {
   )
 }
 
+function IntroNote({ prefix = '' }: { prefix?: string }) {
+  const ready = useWarmup(warmedUp)
+  return (
+    <p className="intro__note" aria-live="polite">
+      {prefix}
+      {ready ? 'Best with a mouse and keyboard.' : 'Setting up the store…'}
+    </p>
+  )
+}
+
 function Marquee({ catalog }: { catalog: Catalog | null }) {
   const count = catalog ? formatCount(catalog.items.length, 'title') : 'Counting tapes…'
   return (
@@ -79,7 +90,7 @@ function ScreeningIntro({
         </button>
       </div>
       <IntroLinks site={site} />
-      <p className="intro__note">{count}Best with a mouse and keyboard.</p>
+      <IntroNote prefix={count} />
     </div>
   )
 }
@@ -91,7 +102,7 @@ function StoreIntro({ catalog, site, webgl }: IntroProps) {
       <Marquee catalog={catalog} />
       <EnterButton webgl={webgl} />
       <IntroLinks site={site} />
-      <p className="intro__note">Best with a mouse and keyboard.</p>
+      <IntroNote />
     </div>
   )
 }

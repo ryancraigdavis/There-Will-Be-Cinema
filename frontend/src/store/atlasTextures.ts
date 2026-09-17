@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { SRGBColorSpace, type Texture, TextureLoader } from 'three'
+import { ImageBitmapLoader, SRGBColorSpace, Texture, TextureLoader } from 'three'
 import { atlasUrl } from '../api'
 import type { AtlasIndex } from '../catalog/types'
+import { bitmapsSupported } from './textureSupport'
+import { queueUpload } from './textureUploads'
 
 interface Entry {
   promise: Promise<Texture>
@@ -10,15 +12,42 @@ interface Entry {
   timer: ReturnType<typeof setTimeout> | undefined
 }
 
-const RELEASE_DELAY_MS = 10_000
-const loader = new TextureLoader()
+const RELEASE_DELAY_MS = 45_000
 const entries = new Map<string, Entry>()
 
-function configure(texture: Texture): Texture {
+let bitmapLoader: ImageBitmapLoader | null = null
+const imageLoader = new TextureLoader()
+
+function decodesOffThread(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    bitmapsSupported(navigator.userAgent, typeof createImageBitmap === 'function')
+  )
+}
+
+async function bitmapTexture(url: string): Promise<Texture> {
+  bitmapLoader ??= new ImageBitmapLoader().setOptions({
+    imageOrientation: 'flipY',
+    premultiplyAlpha: 'none',
+    colorSpaceConversion: 'none',
+  })
+  const texture = new Texture(await bitmapLoader.loadAsync(url))
+  texture.flipY = false
+  return texture
+}
+
+async function decode(url: string): Promise<Texture> {
+  const texture = decodesOffThread() ? await bitmapTexture(url) : await imageLoader.loadAsync(url)
   texture.colorSpace = SRGBColorSpace
   texture.anisotropy = 8
   texture.needsUpdate = true
   return texture
+}
+
+function release(texture: Texture | null) {
+  texture?.dispose()
+  const image = texture?.image as { close?: () => void } | undefined
+  image?.close?.()
 }
 
 function createEntry(url: string): Entry {
@@ -28,23 +57,25 @@ function createEntry(url: string): Entry {
     users: 0,
     timer: undefined,
   }
-  entry.promise = loader.loadAsync(url).then(
-    (texture) => {
-      entry.texture = configure(texture)
-      return entry.texture
-    },
-    (error: unknown) => {
-      entries.delete(url)
-      throw error
-    },
-  )
+  entry.promise = decode(url)
+    .then(queueUpload)
+    .then(
+      (texture) => {
+        entry.texture = texture
+        return texture
+      },
+      (error: unknown) => {
+        entries.delete(url)
+        throw error
+      },
+    )
   return entry
 }
 
 function disposeIfUnused(url: string) {
   const entry = entries.get(url)
   if (entry && entry.users === 0) {
-    entry.texture?.dispose()
+    release(entry.texture)
     entries.delete(url)
   }
 }

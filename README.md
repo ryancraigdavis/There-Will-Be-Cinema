@@ -67,8 +67,14 @@ Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
   you choose. `/?tape=<emby id>` opens the store with that tape already pulled out.
 
 Posters come from texture atlases at three sizes (1024, 2048, 4096). Shelves far away use the
-small sheet and sharpen as you get close; phones stop at 2048. The backend regenerates any missing
-size during its next sync.
+small sheet and sharpen as you get close; the full-size sheet only loads once you stop in front of a
+shelf, so nothing big uploads while you walk. Phones stop at 2048. The backend regenerates any
+missing size during its next sync.
+
+While the opening screen is up ("Setting up the store…"), the site does its expensive one-time work:
+it draws every letter the 3D signs use, uploads the mid-size poster sheets, and compiles the
+shaders. Images decode off the main thread and reach the GPU one per frame; the big sheets go up in
+strips over several frames so no single frame has to push 64 MB.
 
 Use the Docker stack's API from the dev server with `API_PROXY_TARGET=http://localhost:8765 npm run dev`.
 

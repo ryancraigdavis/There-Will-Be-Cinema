@@ -11,6 +11,7 @@ import {
 import { releaseLock } from '../player/pointerLock'
 import { SceneShell } from '../shell/SceneShell'
 import { useScene } from '../shell/sceneState'
+import { useWarmup } from '../shell/warmup'
 import { buildStorePlan } from '../store/layout'
 import { StoreScene } from '../store/StoreScene'
 import { Guide } from '../ui/Guide'
@@ -18,6 +19,7 @@ import { Hud } from '../ui/Hud'
 import { IntroOverlay, PauseOverlay } from '../ui/Overlays'
 import { Sheets } from '../ui/Sheets'
 import { TouchControls } from '../ui/TouchControls'
+import { preloadGlyphs } from '../ui3d/glyphs'
 
 declare global {
   interface Window {
@@ -71,6 +73,10 @@ export function StorePage({ active }: { active: boolean }) {
   const webgl = useMemo(supportsWebGL2, [])
   const known = useMemo(() => (id: string) => catalog?.byId.has(id) ?? false, [catalog])
   useTapeLink(catalog !== null, known)
+
+  useEffect(() => {
+    void preloadGlyphs().then(() => useWarmup.getState().mark({ glyphs: true }))
+  }, [])
 
   useEffect(() => {
     const publish = (state: ReturnType<typeof useScene.getState>) => {

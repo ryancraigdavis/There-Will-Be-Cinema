@@ -15,6 +15,7 @@ import { ShelfBoxes, type ShelfGroup } from './ShelfInstances'
 import { Shelving } from './Shelving'
 import { ShelfSigns } from './Signs'
 import { StoreFixtures } from './StoreFixtures'
+import { ShaderWarmup, TextureUploads, WarmAtlases } from './Warmup'
 
 const PHONE_ATLAS_SIZE = 2048
 const DESKTOP_ATLAS_SIZE = 4096
@@ -69,6 +70,9 @@ export function StoreScene({ catalog, plan, site, atlasIndex, active }: Props) {
         ))}
       <Suspense fallback={null}>{catalog && <BoxDetail catalog={catalog} site={site} />}</Suspense>
       <PlayerRig colliders={colliders} active={active} />
+      <TextureUploads />
+      <WarmAtlases index={atlasIndex} maxSize={maxAtlasSize} />
+      <ShaderWarmup ready={plan !== null && atlasIndex !== null} />
     </>
   )
 }

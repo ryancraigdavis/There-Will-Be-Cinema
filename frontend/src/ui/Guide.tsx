@@ -201,8 +201,8 @@ export function Guide({ catalog, plan, active }: Props) {
     () => (armed && catalog ? buildIndex(catalog.items) : null),
     [armed, catalog],
   )
-  const locations = useMemo(() => (plan ? buildLocations(plan) : new Map()), [plan])
-  const stops = useMemo(() => (plan ? genreStops(plan) : new Map()), [plan])
+  const locations = useMemo(() => (armed && plan ? buildLocations(plan) : new Map()), [armed, plan])
+  const stops = useMemo(() => (armed && plan ? genreStops(plan) : new Map()), [armed, plan])
   const ranked = useMemo(() => (index ? rankIds(index, deferred) : null), [index, deferred])
   const films = useMemo(
     () =>

@@ -30,6 +30,20 @@ describe('lod', () => {
     expect(levelFor(distance, [1024, 2048, 4096], maxSize)).toBe(expected)
   })
 
+  it('waits until you stop walking before loading the full sheet', () => {
+    const levels = [1024, 2048, 4096]
+    expect(levelFor(1, levels, 4096, { settled: false })).toBe(2048)
+    expect(levelFor(1, levels, 4096, { settled: true })).toBe(4096)
+  })
+
+  it.each([
+    ['keeps the full sheet a step past the threshold', 3.8, 4096, 4096],
+    ['lets it go further away', 4.5, 4096, 2048],
+    ['does not jump to it from the middle level', 3.8, 2048, 2048],
+  ])('%s', (_name, distance, current, expected) => {
+    expect(levelFor(distance, [1024, 2048, 4096], 4096, { settled: false, current })).toBe(expected)
+  })
+
   it('uses the only level a legacy index has', () => {
     expect(levelFor(20, [4096], 4096)).toBe(4096)
     expect(levelFor(1, [], 4096)).toBeNull()
