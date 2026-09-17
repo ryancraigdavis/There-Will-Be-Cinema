@@ -2,18 +2,12 @@ import '../club/club.css'
 import type { ReactNode } from 'react'
 import { AccountCard } from '../club/AccountCard'
 import { type DashboardView, dashboardView } from '../club/access'
+import { PollsPanel } from '../club/admin/PollsPanel'
 import { ScreeningsPanel } from '../club/admin/ScreeningsPanel'
 import { SuggestionsPanel } from '../club/admin/SuggestionsPanel'
 import { SignInForm } from '../club/SignInForm'
 import { useClubSession } from '../club/session'
 import { SiteHeader } from '../ui/SiteHeader'
-
-const PANELS = [
-  {
-    title: 'Polls',
-    detail: 'When the club can’t decide, pin a poll to the bulletin board and let members vote.',
-  },
-]
 
 function Gate({ title, detail, children }: { title: string; detail: string; children: ReactNode }) {
   return (
@@ -37,15 +31,7 @@ function Dashboard() {
       </header>
       <ScreeningsPanel />
       <SuggestionsPanel />
-      <div className="dashboard__grid">
-        {PANELS.map((panel) => (
-          <section key={panel.title} className="panel">
-            <h2 className="panel__title">{panel.title}</h2>
-            <p className="panel__detail">{panel.detail}</p>
-            <span className="panel__status">Coming next</span>
-          </section>
-        ))}
-      </div>
+      <PollsPanel />
     </>
   )
 }

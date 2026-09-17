@@ -1,9 +1,10 @@
 import { type ComponentType, useMemo } from 'react'
 import { useNavigate } from 'react-router'
+import { openPollOf, usePoll } from '../club/polls'
 import { useScreenings } from '../club/screenings'
 import { releaseLock, requestLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
-import { openRsvp, openSuggestions } from '../ui/Sheets'
+import { openPoll, openRsvp, openSuggestions } from '../ui/Sheets'
 import { Button3D } from '../ui3d/Button3D'
 import { Card3D, cardLayout } from '../ui3d/Card3D'
 import { BULLETIN, FIXTURE_IDS, FIXTURE_LABELS, FIXTURES, type FixtureId, GATE } from './anchors'
@@ -55,6 +56,7 @@ export function enterStore() {
 }
 
 const ACTION_LABELS: Record<CardAction, string> = {
+  vote: 'Vote',
   rsvp: 'RSVP',
   suggest: 'Suggest a film',
   club: 'Club page',
@@ -65,6 +67,7 @@ function useCardHandlers(): Record<CardAction, () => void> {
   const dispatch = useScene((state) => state.dispatch)
   const navigate = useNavigate()
   return {
+    vote: openPoll,
     rsvp: openRsvp,
     suggest: openSuggestions,
     club: () => {
@@ -77,9 +80,10 @@ function useCardHandlers(): Record<CardAction, () => void> {
 
 function FixtureCard({ id }: { id: FixtureId }) {
   const next = useScreenings((state) => state.next)
+  const poll = usePoll((state) => openPollOf(state.poll))
   const now = useMemo(() => new Date(), [])
-  const card = cardFor(id, next, now)
-  const actions = cardActions(id, next)
+  const card = cardFor(id, next, now, poll)
+  const actions = cardActions(id, next, poll)
   const handlers = useCardHandlers()
   const { bottom } = cardLayout(card.width, card.height)
   const buttonHeight = card.height * 0.12

@@ -1,5 +1,5 @@
 import { screeningWhen } from '../club/format'
-import type { Screening } from '../club/types'
+import type { Poll, Screening } from '../club/types'
 import type { Vec3 } from '../scene/math'
 import { BULLETIN, besideBulletin, COUNTER, FIXTURES, type FixtureId } from './anchors'
 
@@ -43,13 +43,20 @@ export function filmTitle(screening: Pick<Screening, 'title' | 'year'>): string 
   return screening.year === null ? screening.title : `${screening.title} (${screening.year})`
 }
 
-function bulletinCopy(next: Screening | null, now: Date): Copy {
-  return next === null
+function bulletinCopy(next: Screening | null, now: Date, poll: Poll | null): Copy {
+  const quiet = poll
     ? {
+        kicker: 'Club poll',
+        title: poll.question,
+        body: 'Cast your vote before the hosts close the poll.',
+      }
+    : {
         kicker: 'Movie club',
         title: 'Nothing on the schedule yet',
         body: 'The next screening gets pinned up here as soon as it’s set.',
       }
+  return next === null
+    ? quiet
     : {
         kicker: 'Next screening',
         title: filmTitle(next),
@@ -73,7 +80,7 @@ function telephoneCopy(next: Screening | null, now: Date): Copy {
       }
 }
 
-const COPY: Record<FixtureId, (next: Screening | null, now: Date) => Copy> = {
+const COPY: Record<FixtureId, (next: Screening | null, now: Date, poll: Poll | null) => Copy> = {
   bulletin: bulletinCopy,
   suggestion: () => ({
     kicker: 'Suggestion box',
@@ -83,16 +90,32 @@ const COPY: Record<FixtureId, (next: Screening | null, now: Date) => Copy> = {
   telephone: telephoneCopy,
 }
 
-export type CardAction = 'rsvp' | 'suggest' | 'club' | 'back'
+export type CardAction = 'vote' | 'rsvp' | 'suggest' | 'club' | 'back'
 
-const ACTIONS: Record<FixtureId, (scheduled: boolean) => CardAction[]> = {
-  bulletin: (scheduled) => (scheduled ? ['rsvp', 'club', 'back'] : ['club', 'back']),
+const BULLETIN_ACTIONS: Record<string, CardAction[]> = {
+  'screening+poll': ['vote', 'rsvp', 'back'],
+  screening: ['rsvp', 'club', 'back'],
+  poll: ['vote', 'club', 'back'],
+  quiet: ['club', 'back'],
+}
+
+function bulletinActions(scheduled: boolean, polling: boolean): CardAction[] {
+  const key = [scheduled && 'screening', polling && 'poll'].filter(Boolean).join('+') || 'quiet'
+  return BULLETIN_ACTIONS[key] ?? ['club', 'back']
+}
+
+const ACTIONS: Record<FixtureId, (scheduled: boolean, polling: boolean) => CardAction[]> = {
+  bulletin: bulletinActions,
   suggestion: () => ['suggest', 'back'],
   telephone: (scheduled) => (scheduled ? ['rsvp', 'back'] : ['club', 'back']),
 }
 
-export function cardActions(id: FixtureId, next: Screening | null): CardAction[] {
-  return ACTIONS[id](next !== null)
+export function cardActions(
+  id: FixtureId,
+  next: Screening | null,
+  poll: Poll | null = null,
+): CardAction[] {
+  return ACTIONS[id](next !== null, poll !== null)
 }
 
 export function buttonRow(width: number, count: number): { width: number; xs: number[] } {
@@ -103,6 +126,11 @@ export function buttonRow(width: number, count: number): { width: number; xs: nu
   return { width: button, xs }
 }
 
-export function cardFor(id: FixtureId, next: Screening | null, now: Date): CardSpec {
-  return { ...PLACES[id], ...COPY[id](next, now) }
+export function cardFor(
+  id: FixtureId,
+  next: Screening | null,
+  now: Date,
+  poll: Poll | null = null,
+): CardSpec {
+  return { ...PLACES[id], ...COPY[id](next, now, poll) }
 }

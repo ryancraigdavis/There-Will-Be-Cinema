@@ -113,3 +113,34 @@ CREATE TABLE IF NOT EXISTS club_suggestions (
     updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_club_suggestions_when ON club_suggestions (created_at);
+
+CREATE TABLE IF NOT EXISTS club_polls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft',
+    closed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS club_poll_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    item_id TEXT,
+    title TEXT NOT NULL,
+    year INTEGER,
+    suggestion_id INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_club_poll_options_poll ON club_poll_options (poll_id, position);
+
+CREATE TABLE IF NOT EXISTS club_votes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id INTEGER NOT NULL,
+    option_id INTEGER NOT NULL,
+    voter TEXT NOT NULL,
+    name TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE (poll_id, voter)
+);

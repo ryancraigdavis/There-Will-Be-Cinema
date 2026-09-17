@@ -1025,3 +1025,281 @@ textarea.field__input {
     overflow-x: auto;
   }
 }
+
+.poll {
+  display: grid;
+  gap: 12px;
+}
+
+.poll__question {
+  margin: 0;
+  font: 600 22px / 1.2 var(--font-display);
+  letter-spacing: 0.03em;
+  color: var(--cream);
+}
+
+.poll__options {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.poll__option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.poll__option:hover,
+.poll__option:has(input:checked) {
+  border-color: var(--gold);
+}
+
+.poll__option input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--gold);
+}
+
+.poll__film {
+  flex: 1;
+  min-width: 0;
+  font: 500 16px / 1.25 var(--font-display);
+  letter-spacing: 0.02em;
+  color: var(--cream);
+}
+
+.poll__year {
+  color: var(--text-muted);
+}
+
+.poll__mine {
+  padding: 3px 7px;
+  font: 500 11px / 1 var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--gold);
+  border-radius: var(--radius-sm);
+}
+
+.poll__results {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result__body {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.result__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result__count {
+  font: 500 14px / 1 var(--font-display);
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.result__bar {
+  display: block;
+  min-width: 2px;
+  height: 8px;
+  background: var(--rust);
+  border-radius: 999px;
+}
+
+.result--leading .result__bar {
+  background: var(--gold);
+}
+
+.result--leading .result__count {
+  color: var(--gold);
+}
+
+.result__voters {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.club-poll {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+  margin-top: 32px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--sunset);
+  border-radius: var(--radius);
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+  font-size: 14px;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+}
+
+.poll-cards {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.poll-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.poll-card__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.poll-card__head p {
+  margin: 0;
+}
+
+.poll-card__question {
+  font: 600 19px / 1.25 var(--font-display);
+  letter-spacing: 0.02em;
+  color: var(--cream);
+}
+
+.badge--poll-open {
+  color: var(--ink);
+  background: var(--gold);
+}
+
+.badge--poll-draft {
+  color: var(--cream);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.badge--poll-closed {
+  color: var(--cream);
+  background: var(--rust);
+}
+
+.editor--single {
+  grid-template-columns: minmax(0, 720px);
+}
+
+.editor__row--add {
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  align-items: end;
+}
+
+.option-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  background: var(--ink);
+  border-radius: var(--radius-sm);
+}
+
+.option-list__row > span {
+  font: 500 16px / 1.3 var(--font-display);
+  color: var(--cream);
+}
+
+.option-add {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--ink);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.option-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option-picks .chip:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+@media (max-width: 560px) {
+  .editor__row--add {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tag {
+  margin-left: 8px;
+  padding: 2px 6px;
+  font: 500 11px / 1 var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgb(252 204 12 / 0.5);
+  border-radius: var(--radius-sm);
+}
+
+.poll .button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}

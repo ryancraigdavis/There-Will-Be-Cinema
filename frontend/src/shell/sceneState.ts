@@ -8,7 +8,7 @@ export interface Travel {
   itemId: string | null
 }
 
-export type Sheet = 'account' | 'rsvp' | 'suggest'
+export type Sheet = 'account' | 'rsvp' | 'suggest' | 'poll'
 
 interface SceneState {
   mode: RigMode

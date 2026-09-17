@@ -1,8 +1,8 @@
 import { Text } from '@react-three/drei'
-import { useMemo } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { truncate } from '../catalog/format'
 import { boardDate, relativeDay, screeningTime } from '../club/format'
-import type { Screening } from '../club/types'
+import type { Poll, Screening } from '../club/types'
 import type { Vec3 } from '../scene/math'
 import { useTexture } from '../store/atlasTextures'
 import { FONTS } from '../theme/fonts'
@@ -154,12 +154,80 @@ function LaterNote({ later }: { later: readonly Screening[] }) {
   )
 }
 
-export function BoardScreening({ next, later }: { next: Screening; later: readonly Screening[] }) {
+const POLL_LINES = 4
+const POLL_TITLE_CHARS = 30
+
+export function PollNote({ poll }: { poll: Poll }) {
+  const shown = poll.options.slice(0, POLL_LINES)
+  const extra = poll.options.length - shown.length
+  const lines = [
+    ...shown.map((option) => `•  ${truncate(option.title, POLL_TITLE_CHARS)}`),
+    ...(extra > 0 ? [`+ ${extra} more`] : []),
+  ]
+  return (
+    <group position={[NOTE.x, -0.2, 0.03]} rotation={[0, 0, 0.025]}>
+      <Paper height={0.28} seed={59} />
+      <Text
+        font={FONTS.display}
+        fontSize={0.025}
+        letterSpacing={0.08}
+        color={PALETTE.rust}
+        anchorX="left"
+        anchorY="top"
+        position={[NOTE.left, 0.115, 0.002]}
+      >
+        CLUB POLL
+      </Text>
+      <Text
+        font={FONTS.display}
+        fontSize={0.032}
+        lineHeight={1.05}
+        maxWidth={0.45}
+        color={PALETTE.ink}
+        anchorX="left"
+        anchorY="top"
+        position={[NOTE.left, 0.08, 0.002]}
+      >
+        {truncate(poll.question, 70)}
+      </Text>
+      <Text
+        font={FONTS.body}
+        fontSize={0.021}
+        lineHeight={1.45}
+        maxWidth={0.45}
+        color={PALETTE.ink}
+        anchorX="left"
+        anchorY="bottom"
+        position={[NOTE.left, -0.12, 0.002]}
+      >
+        {lines.join('\n')}
+      </Text>
+      <Pin position={[0, 0.12, 0.01]} />
+    </group>
+  )
+}
+
+interface BoardProps {
+  next: Screening
+  later: readonly Screening[]
+  poll: Poll | null
+  showLater: boolean
+}
+
+function BottomNote({ later, poll, showLater }: Omit<BoardProps, 'next'>) {
+  const choices: [boolean, () => ReactNode][] = [
+    [poll !== null, () => <PollNote poll={poll as Poll} />],
+    [showLater, () => <LaterNote later={later} />],
+  ]
+  return choices.find(([when]) => when)?.[1]() ?? null
+}
+
+export function BoardScreening({ next, ...rest }: BoardProps) {
   return (
     <>
       <Poster screening={next} />
       <NextNote screening={next} />
-      <LaterNote later={later} />
+      <BottomNote {...rest} />
     </>
   )
 }

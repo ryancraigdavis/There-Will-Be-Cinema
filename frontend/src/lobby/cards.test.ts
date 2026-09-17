@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Screening } from '../club/types'
+import type { Poll, Screening } from '../club/types'
 import { buttonRow, cardActions, cardFor, filmTitle } from './cards'
 
 const screening: Screening = {
@@ -38,6 +38,35 @@ it.each([
   [{ title: 'Untitled', year: null }, 'Untitled'],
 ])('filmTitle %#', (value, expected) => {
   expect(filmTitle(value)).toBe(expected)
+})
+
+const poll: Poll = {
+  id: 1,
+  question: 'October: pick the PTA film',
+  status: 'open',
+  options: [],
+  totalVotes: null,
+  myVote: null,
+}
+
+describe('with a poll open', () => {
+  it.each([
+    [true, ['vote', 'rsvp', 'back']],
+    [false, ['vote', 'club', 'back']],
+  ] as const)('bulletin actions with a screening: %s', (scheduled, expected) => {
+    expect(cardActions('bulletin', scheduled ? screening : null, poll)).toEqual(expected)
+  })
+
+  it('puts the question on the card when nothing is scheduled', () => {
+    expect(cardFor('bulletin', null, new Date(), poll)).toMatchObject({
+      kicker: 'Club poll',
+      title: 'October: pick the PTA film',
+    })
+  })
+
+  it('keeps the screening on the card when there is one', () => {
+    expect(cardFor('bulletin', screening, new Date(), poll).kicker).toBe('Next screening')
+  })
 })
 
 describe('cardActions', () => {

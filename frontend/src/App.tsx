@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Route, Routes, useLocation } from 'react-router'
+import { usePoll } from './club/polls'
 import { useScreenings } from './club/screenings'
 import { useClubSession } from './club/session'
 import { AdminPage } from './pages/AdminPage'
@@ -18,6 +19,7 @@ export function App() {
   useEffect(() => {
     void useClubSession.getState().refresh()
     void useScreenings.getState().refresh()
+    void usePoll.getState().refresh()
   }, [])
 
   useEffect(() => {

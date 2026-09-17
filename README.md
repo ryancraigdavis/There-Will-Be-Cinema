@@ -123,6 +123,16 @@ The club is moving in from the old Canva page in stages (see the plan's Phase 5)
 - **Dashboard:** every screening shows its RSVP count; *Guest list* opens names, answers, guests
   and notes with a headcount, and lets you remove a bogus entry. Deleting a screening deletes its
   RSVPs. Anonymous RSVPs and suggestions are capped at 30 per address every ten minutes.
+- **Polls:** for when the club can't decide. On the dashboard, write a question and add two to
+  six options from the suggestions inbox, a library search, or typed titles. Polls save as
+  drafts; *Open poll* pins it to the bulletin board (as a note, plus a Vote button on the board's
+  card) and to `/club`. Only one poll is open at a time. Members vote once and can change it
+  while the poll is open: signed-in members by account, everyone else by a random id kept in
+  their browser. Admins watch live counts (with names for signed-in voters); members see results
+  only after *Close poll*, and `/club` keeps showing them for two weeks. A closed poll can be
+  reopened; a leader that came from a suggestion can be marked scheduled in one click.
+- **Board switch:** *Show upcoming dates on the bulletin board* turns the "Coming up" note on or
+  off. An open poll takes that spot on the board while it runs.
 
 ## Production stack
 
@@ -165,6 +175,13 @@ docker compose down
 | `POST /api/club/admin/rsvps/{id}/delete` | admins: remove an RSVP |
 | `GET /api/club/admin/suggestions` | admins: the inbox, newest first |
 | `POST /api/club/admin/suggestions/{id}[/delete]` | admins: set `{status}`, or delete |
+| `GET /api/club/poll?voter=` | the open poll, or results of one closed in the last 14 days |
+| `POST /api/club/votes` | `{poll_id, option_id, voter}`; one vote per account or browser |
+| `GET /api/club/settings` | `{board_schedule}` |
+| `POST /api/club/admin/settings` | admins: `{board_schedule}` |
+| `GET/POST /api/club/admin/polls[/{id}]` | admins: list with live counts, create, edit a draft |
+| `POST /api/club/admin/polls/{id}/status` | admins: `{status: open\|closed}` |
+| `POST /api/club/admin/polls/{id}/delete` | admins: delete a poll and its votes |
 
 ## Configuration
 

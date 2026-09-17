@@ -1,15 +1,17 @@
 import { Text } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useMemo } from 'react'
-import { CatmullRomCurve3, DoubleSide, TubeGeometry, Vector3 } from 'three'
+import { CatmullRomCurve3, DoubleSide, type Texture, TubeGeometry, Vector3 } from 'three'
+import { openPollOf, usePoll } from '../club/polls'
 import { laterScreenings, useScreenings } from '../club/screenings'
+import type { Poll } from '../club/types'
 import { useTexture } from '../store/atlasTextures'
 import { ROOM } from '../store/constants'
 import { FONTS } from '../theme/fonts'
 import { PALETTE } from '../theme/palette'
 import { corkTexture, crtTexture, noteTexture } from '../theme/textures'
 import { BULLETIN, COUNTER, FIXTURES, GATE } from './anchors'
-import { BoardScreening } from './BoardScreening'
+import { BoardScreening, PollNote } from './BoardScreening'
 
 const blockPointer = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
 
@@ -125,28 +127,56 @@ export function HangingLogo() {
 const NOTES = [
   { lines: ['NEXT SCREENING', 'Date to be set', 'Check back soon'], x: -0.36, y: 0.04, tilt: 0.05 },
   {
-    lines: ['SUGGESTIONS', 'The box on the', 'counter opens soon'],
+    lines: ['SUGGESTIONS', 'Drop a film in', 'the box on the', 'counter'],
     x: 0.02,
     y: -0.1,
     tilt: -0.04,
   },
-  { lines: ['RSVP', 'The phone line is', 'coming soon'], x: 0.38, y: 0.08, tilt: 0.07 },
+  {
+    lines: ['RSVP', 'The phone line', 'opens with the', 'next screening'],
+    x: 0.38,
+    y: 0.08,
+    tilt: 0.07,
+  },
 ]
 
-function PlaceholderNotes() {
+function PlaceholderNotes({ poll }: { poll: Poll | null }) {
   const notes = useMemo(() => NOTES.map((note, i) => noteTexture(note.lines, i + 11)), [])
-  return NOTES.map((note, i) => (
-    <group key={note.lines[0]} position={[note.x, note.y, 0.03]} rotation={[0, 0, note.tilt]}>
+  const skipped = poll === null ? '' : 'SUGGESTIONS'
+  const shown = NOTES.map((note, i) => ({ note, i })).filter(
+    ({ note }) => note.lines[0] !== skipped,
+  )
+  return (
+    <>
+      {shown.map(({ note, i }) => (
+        <PinnedNote key={note.lines[0]} note={note} texture={notes[i]} index={i} />
+      ))}
+      {poll === null ? null : <PollNote poll={poll} />}
+    </>
+  )
+}
+
+function PinnedNote({
+  note,
+  texture,
+  index,
+}: {
+  note: (typeof NOTES)[number]
+  texture: Texture | undefined
+  index: number
+}) {
+  return (
+    <group position={[note.x, note.y, 0.03]} rotation={[0, 0, note.tilt]}>
       <mesh>
         <planeGeometry args={[0.3, 0.3]} />
-        <meshLambertMaterial map={notes[i]} />
+        <meshLambertMaterial map={texture ?? null} />
       </mesh>
       <mesh position={[0, 0.13, 0.01]}>
         <sphereGeometry args={[0.012, 10, 8]} />
-        <meshLambertMaterial color={i % 2 ? PALETTE.gold : PALETTE.rustBright} />
+        <meshLambertMaterial color={index % 2 ? PALETTE.gold : PALETTE.rustBright} />
       </mesh>
     </group>
-  ))
+  )
 }
 
 export function BulletinBoard() {
@@ -154,6 +184,8 @@ export function BulletinBoard() {
   const next = useScreenings((state) => state.next)
   const schedule = useScreenings((state) => state.schedule)
   const later = useMemo(() => laterScreenings(schedule, next), [schedule, next])
+  const poll = usePoll((state) => openPollOf(state.poll))
+  const showLater = usePoll((state) => state.boardSchedule)
   return (
     <group position={[...FIXTURES.bulletin]} rotation={[0, BULLETIN.yaw, 0]}>
       {[-0.56, 0.56].map((x) => (
@@ -183,7 +215,11 @@ export function BulletinBoard() {
       >
         MOVIE CLUB
       </Text>
-      {next === null ? <PlaceholderNotes /> : <BoardScreening next={next} later={later} />}
+      {next === null ? (
+        <PlaceholderNotes poll={poll} />
+      ) : (
+        <BoardScreening next={next} later={later} poll={poll} showLater={showLater} />
+      )}
     </group>
   )
 }

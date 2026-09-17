@@ -1,5 +1,7 @@
 import type { ComponentType } from 'react'
 import { AccountCard } from '../club/AccountCard'
+import { PollVote } from '../club/PollVote'
+import { usePoll } from '../club/polls'
 import { RsvpForm } from '../club/RsvpForm'
 import { SignInForm } from '../club/SignInForm'
 import { SuggestionForm } from '../club/SuggestionForm'
@@ -11,6 +13,7 @@ import { closeSheet, openSheet, Sheet, useSheetKeys } from './Sheet'
 export const openAccount = () => openSheet('account')
 export const openRsvp = () => openSheet('rsvp')
 export const openSuggestions = () => openSheet('suggest')
+export const openPoll = () => openSheet('poll')
 
 function AccountView() {
   const signedIn = useClubSession((state) => state.session.name !== null)
@@ -44,10 +47,24 @@ function SuggestView() {
   )
 }
 
+function PollView() {
+  const poll = usePoll((state) => state.poll)
+  return (
+    <Sheet title="Club poll">
+      {poll === null ? (
+        <p className="club-form__hint">There’s no poll right now.</p>
+      ) : (
+        <PollVote poll={poll} />
+      )}
+    </Sheet>
+  )
+}
+
 const VIEWS: Record<SheetKind, ComponentType> = {
   account: AccountView,
   rsvp: RsvpView,
   suggest: SuggestView,
+  poll: PollView,
 }
 
 export function Sheets({ active }: { active: boolean }) {

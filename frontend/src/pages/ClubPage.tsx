@@ -1,6 +1,8 @@
 import '../club/club.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { screeningDate, screeningTime } from '../club/format'
+import { PollVote } from '../club/PollVote'
+import { usePoll } from '../club/polls'
 import { RsvpForm } from '../club/RsvpForm'
 import { ScreeningCard } from '../club/ScreeningCard'
 import { SuggestionForm } from '../club/SuggestionForm'
@@ -39,6 +41,18 @@ function ComingUp({
           </li>
         ))}
       </ol>
+    </section>
+  )
+}
+
+function PollSection() {
+  const poll = usePoll((state) => state.poll)
+  return poll === null ? null : (
+    <section className="club-poll" aria-labelledby="club-poll-title">
+      <h2 id="club-poll-title" className="section-head__title">
+        {poll.status === 'open' ? 'Club poll' : 'Poll results'}
+      </h2>
+      <PollVote poll={poll} />
     </section>
   )
 }
@@ -126,6 +140,7 @@ export function ClubPage() {
         {panel === null ? null : (
           <ClubPanel key={panelKey(panel)} panel={panel} onClose={() => setPanel(null)} />
         )}
+        <PollSection />
         <ComingUp
           screenings={later}
           onRsvp={(screening) => setPanel({ kind: 'rsvp', screening })}
