@@ -1,7 +1,9 @@
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, type Page } from 'playwright'
+import { benchRows, compareRows, formatTable } from '../src/perf/benchTable.ts'
+import type { Report } from '../src/perf/recorder.ts'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SHOTS = resolve(ROOT, 'shots')
@@ -11,10 +13,26 @@ function arg(name: string, fallback: string): string {
   return hit ? hit.slice(name.length + 3) : fallback
 }
 
+const BENCH_QUERY = '?perf=1&bench=1&dt=16.7'
+const BENCH_TIMEOUT_MS = 45 * 60_000
+
 const mobile = process.argv.includes('--mobile')
-const width = Number(arg('width', mobile ? '390' : '1280'))
-const height = Number(arg('height', mobile ? '844' : '720'))
+const bench = arg('bench', '')
+const width = Number(arg('width', mobile ? '390' : bench ? '640' : '1280'))
+const height = Number(arg('height', mobile ? '844' : bench ? '360' : '720'))
 const url = arg('url', 'http://localhost:5173/')
+const startUrl = bench ? new URL(BENCH_QUERY, url).toString() : url
+
+const benchPath = (label: string) => resolve(SHOTS, `bench-${label}.json`)
+const readBench = async (label: string) =>
+  JSON.parse(await readFile(benchPath(label), 'utf8')) as Report
+
+const compare = arg('bench-compare', '')
+if (compare) {
+  const [before = '', after = ''] = compare.split(',')
+  console.log(formatTable(compareRows(await readBench(before), await readBench(after))))
+  process.exit(0)
+}
 
 const settle = (page: Page, frames = 30) =>
   page.evaluate(async (count) => {
@@ -119,6 +137,16 @@ const STEPS: Record<string, (page: Page, value: string) => Promise<unknown>> = {
     console.log(`${value}: ${report}`)
   },
   wait: (page, value) => page.waitForTimeout(Number(value)),
+  bench: async (page, value) => {
+    await page.waitForFunction(() => window.__perf?.benchDone === true, null, {
+      timeout: BENCH_TIMEOUT_MS,
+      polling: 1000,
+    })
+    const report = (await page.evaluate(() => window.__perf?.report())) as Report
+    await mkdir(SHOTS, { recursive: true })
+    await writeFile(benchPath(value), JSON.stringify(report, null, 1))
+    console.log(`${formatTable(benchRows(report))}\n✓ shots/bench-${value}.json`)
+  },
   flash: async (page, value) => {
     await mkdir(SHOTS, { recursive: true })
     await page.screenshot({ path: resolve(SHOTS, `${value}.png`) })
@@ -160,7 +188,7 @@ if (process.argv.includes('--nolock')) {
 }
 
 try {
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+  await page.goto(startUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
   await page.waitForFunction(() => window.__sceneReady === true, null, { timeout: 60_000 })
   for (const step of process.argv.slice(2).filter((a) => a.startsWith('--'))) {
     const [key = '', ...rest] = step.slice(2).split('=')
@@ -189,6 +217,7 @@ declare global {
     __rendererInfo?: string
     __scene?: Record<string, unknown>
     __renderStats?: Record<string, number>
+    __perf?: { benchDone: boolean; report: () => unknown }
     __three?: {
       scene: { children: unknown[]; name?: string }
       camera: unknown

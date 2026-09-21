@@ -12,6 +12,7 @@ import {
   Vector3,
 } from 'three'
 import type { AtlasIndex, Catalog } from '../catalog/types'
+import { perf } from '../perf/perf'
 import type { Vec3 } from '../scene/math'
 import { useScene } from '../shell/sceneState'
 import { spineColor } from '../theme/palette'
@@ -120,6 +121,7 @@ function BoxBatch({ slots, atlas, index, catalog, size, pickable }: BatchProps) 
   const selected = useScene((state) => state.selected)
   const { material, uniforms } = useMemo(() => createBoxMaterial(cellSize(index)), [index])
   const geometry = useMemo(() => batchGeometry(slots, catalog, index), [slots, catalog, index])
+  perf.count('render.BoxBatch')
 
   useEffect(() => {
     uniforms.uAtlas.value = texture
@@ -149,6 +151,7 @@ function BoxBatch({ slots, atlas, index, catalog, size, pickable }: BatchProps) 
       target.setMatrixAt(i, slotMatrix(slot, slot.itemId === selected ? 0 : 1))
     })
     target.instanceMatrix.needsUpdate = true
+    perf.count('matrix.rewrite', slots.length)
     target.computeBoundingBox()
     target.computeBoundingSphere()
   }, [slots, selected])
@@ -208,6 +211,7 @@ interface ShelfBoxesProps {
 export function ShelfBoxes({ group, catalog, index, maxAtlasSize }: ShelfBoxesProps) {
   const batches = useMemo(() => groupSlotsByAtlas(group.slots, index), [group.slots, index])
   const lod = useLod(group.center, index, maxAtlasSize)
+  useEffect(() => perf.count('lod.change', lod.size || lod.pickable ? 1 : 0), [lod])
   return batches.map((batch) => (
     <BoxBatch
       key={`${group.id}:${batch.atlas}`}

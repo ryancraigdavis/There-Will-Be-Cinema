@@ -7,6 +7,8 @@ import {
 } from '@react-three/fiber'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { ANCHORS } from '../lobby/anchors'
+import { PerfProbe } from '../perf/PerfProbe'
+import { PERF_ON, perf } from '../perf/perf'
 import { useScene } from './sceneState'
 
 declare global {
@@ -29,6 +31,7 @@ function lockAwareEvents(store: EventStore) {
     compute: (event: Event, state: RootState) => {
       const locked = document.pointerLockElement === state.gl.domElement
       const pointer = event as PointerEvent
+      perf.count('raycast.passes')
       const x = (pointer.offsetX / state.size.width) * 2 - 1
       const y = -(pointer.offsetY / state.size.height) * 2 + 1
       state.pointer.set(locked ? 0 : x, locked ? 0 : y)
@@ -101,6 +104,7 @@ export function SceneShell({ active, children }: { active: boolean; children: Re
       <ReadySignal />
       <StatsSignal />
       <DebugHandles />
+      {PERF_ON && <PerfProbe active={active} />}
     </Canvas>
   )
 }

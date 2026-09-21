@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import type { Camera, PerspectiveCamera } from 'three'
 import { ANCHORS, type AnchorId } from '../lobby/anchors'
+import { FIXED_STEP_MS } from '../perf/perf'
 import type { Pose } from '../scene/math'
 import { useScene } from '../shell/sceneState'
 import {
@@ -14,6 +15,7 @@ import {
 } from './cameraRig'
 import type { AABB } from './collision'
 import { fovFor } from './fov'
+import { frameDt } from './frameDt'
 import { moveInput } from './keys'
 import { isMoving, look, lookAround, walk } from './locomotion'
 import { touchStick } from './touchStick'
@@ -140,7 +142,7 @@ export function PlayerRig({ colliders, active }: Props) {
   }, [travel, mode])
 
   useFrame((state, delta) => {
-    const dt = Math.min(delta, MAX_FRAME_SECONDS)
+    const dt = Math.min(frameDt(delta, FIXED_STEP_MS), MAX_FRAME_SECONDS)
     const scene = useScene.getState()
     const anchor = target ? ANCHORS[target] : null
     const before = pose.current

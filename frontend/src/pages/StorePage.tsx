@@ -8,11 +8,14 @@ import {
   useCollections,
   useSite,
 } from '../catalog/resources'
+import { PerfHud } from '../perf/PerfHud'
+import { PERF_ON } from '../perf/perf'
 import { releaseLock } from '../player/pointerLock'
 import { SceneShell } from '../shell/SceneShell'
 import { useScene } from '../shell/sceneState'
 import { useWarmup } from '../shell/warmup'
 import { buildStorePlan } from '../store/layout'
+import { availableLevels } from '../store/lod'
 import { StoreScene } from '../store/StoreScene'
 import { Guide } from '../ui/Guide'
 import { Hud } from '../ui/Hud'
@@ -70,6 +73,7 @@ export function StorePage({ active }: { active: boolean }) {
     [catalog, collections],
   )
   const webgl = useMemo(supportsWebGL2, [])
+  const levels = useMemo(() => availableLevels(atlasIndex), [atlasIndex])
   const known = useMemo(() => (id: string) => catalog?.byId.has(id) ?? false, [catalog])
   useTapeLink(catalog !== null, known)
 
@@ -122,6 +126,7 @@ export function StorePage({ active }: { active: boolean }) {
       <IntroOverlay catalog={catalog} site={site} webgl={webgl} />
       <TouchControls />
       <PauseOverlay />
+      {PERF_ON && <PerfHud levels={levels} />}
     </div>
   )
 }

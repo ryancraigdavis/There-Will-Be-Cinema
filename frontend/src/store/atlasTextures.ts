@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ImageBitmapLoader, SRGBColorSpace, Texture, TextureLoader } from 'three'
 import { atlasUrl } from '../api'
 import type { AtlasIndex } from '../catalog/types'
+import { levelKey, textureMb, urlLabel } from '../perf/mode'
+import { perf } from '../perf/perf'
 import { bitmapsSupported } from './textureSupport'
 import { queueUpload } from './textureUploads'
 
@@ -44,6 +46,28 @@ async function decode(url: string): Promise<Texture> {
   return texture
 }
 
+function sizeOf(texture: Texture | null): { width: number; height: number } {
+  const { width = 0, height = 0 } = (texture?.image ?? {}) as { width?: number; height?: number }
+  return { width, height }
+}
+
+function resident(texture: Texture | null, sign: number) {
+  const { width, height } = sizeOf(texture)
+  const mb = sign * textureMb(width, height)
+  perf.adjust(`tex.mb.${levelKey(width)}`, mb)
+  perf.adjust('tex.mb', mb)
+}
+
+async function trackedDecode(url: string): Promise<Texture> {
+  const start = performance.now()
+  perf.adjust('decode.inflight', 1)
+  const texture = await decode(url).finally(() => perf.adjust('decode.inflight', -1))
+  const { width, height } = sizeOf(texture)
+  perf.count('decode.count')
+  perf.event(`fetch+decode ${urlLabel(url)}`, performance.now() - start, width * height * 4)
+  return texture
+}
+
 function release(texture: Texture | null) {
   texture?.dispose()
   const image = texture?.image as { close?: () => void } | undefined
@@ -57,11 +81,12 @@ function createEntry(url: string): Entry {
     users: 0,
     timer: undefined,
   }
-  entry.promise = decode(url)
-    .then(queueUpload)
+  entry.promise = trackedDecode(url)
+    .then((texture) => queueUpload(texture, urlLabel(url)))
     .then(
       (texture) => {
         entry.texture = texture
+        resident(texture, 1)
         return texture
       },
       (error: unknown) => {
@@ -75,6 +100,7 @@ function createEntry(url: string): Entry {
 function disposeIfUnused(url: string) {
   const entry = entries.get(url)
   if (entry && entry.users === 0) {
+    resident(entry.texture, -1)
     release(entry.texture)
     entries.delete(url)
   }

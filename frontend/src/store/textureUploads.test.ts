@@ -2,6 +2,7 @@ import { DataTexture, Texture } from 'three'
 import { describe, expect, it } from 'vitest'
 import {
   BAND_ROWS,
+  bandBytes,
   bandedSteps,
   bandOffsets,
   pendingUploads,
@@ -46,6 +47,13 @@ describe('banded uploads', () => {
     [1000, [0, 512]],
   ])('splits %i rows into bands', (height, expected) => {
     expect(bandOffsets(height)).toEqual(expected)
+  })
+
+  it.each([
+    ['a 4096 sheet', 4096, 4096, [0, ...Array(8).fill(4096 * 512 * 4)]],
+    ['a short last band', 100, 600, [0, 100 * 512 * 4, 100 * 88 * 4]],
+  ])('sizes every step of %s', (_name, width, height, expected) => {
+    expect(bandBytes(width, height)).toEqual(expected)
   })
 
   it('allocates once, copies each band in place, and builds mipmaps only on the last', () => {

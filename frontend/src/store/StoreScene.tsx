@@ -2,6 +2,8 @@ import { useThree } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import type { AtlasIndex, Catalog, SiteInfo } from '../catalog/types'
 import { Lobby } from '../lobby/Lobby'
+import { BenchDriver } from '../perf/BenchDriver'
+import { BENCH } from '../perf/perf'
 import { PlayerRig } from '../player/PlayerRig'
 import { sceneColliders } from '../scene/colliders'
 import { Decor } from '../scene/Decor'
@@ -73,6 +75,7 @@ export function StoreScene({ catalog, plan, site, atlasIndex, active }: Props) {
       <TextureUploads />
       <WarmAtlases index={atlasIndex} maxSize={maxAtlasSize} />
       <ShaderWarmup ready={plan !== null && atlasIndex !== null} />
+      {BENCH && <BenchDriver plan={plan} />}
     </>
   )
 }

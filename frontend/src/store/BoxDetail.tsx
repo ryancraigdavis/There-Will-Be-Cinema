@@ -18,6 +18,7 @@ import { type BadgeKind, badgesFor } from '../catalog/badges'
 import { metaLine, truncate } from '../catalog/format'
 import type { Catalog, CatalogItem, SiteInfo } from '../catalog/types'
 import { runtimesDiffer, versionDetail, versionLabel } from '../catalog/versions'
+import { timed } from '../perf/perf'
 import type { Vec3 } from '../scene/math'
 import { useScene } from '../shell/sceneState'
 import { FONTS } from '../theme/fonts'
@@ -58,8 +59,10 @@ const raycaster = new Raycaster()
 function clearDistance(camera: Camera, scene: Scene, forward: Vector3): number {
   raycaster.set(camera.position, forward)
   raycaster.far = DISTANCE + CLEARANCE
-  const nearest =
-    raycaster.intersectObjects(scene.children, true)[0]?.distance ?? Number.POSITIVE_INFINITY
+  const hits = timed('detail clear-space raycast', () =>
+    raycaster.intersectObjects(scene.children, true),
+  )
+  const nearest = hits[0]?.distance ?? Number.POSITIVE_INFINITY
   return Math.max(MIN_DISTANCE, Math.min(DISTANCE, nearest - CLEARANCE))
 }
 
