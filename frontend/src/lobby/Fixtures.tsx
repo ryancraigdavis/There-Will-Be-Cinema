@@ -1,19 +1,36 @@
 import { Text } from '@react-three/drei'
-import type { ThreeEvent } from '@react-three/fiber'
-import { useMemo } from 'react'
-import { CatmullRomCurve3, DoubleSide, type Texture, TubeGeometry, Vector3 } from 'three'
-import { openPollOf, usePoll } from '../club/polls'
-import { laterScreenings, useScreenings } from '../club/screenings'
-import type { Poll } from '../club/types'
+import { type ThreeEvent, useFrame } from '@react-three/fiber'
+import { useMemo, useRef } from 'react'
+import {
+  CatmullRomCurve3,
+  DoubleSide,
+  type Group,
+  type Texture,
+  TubeGeometry,
+  Vector3,
+} from 'three'
+import { posterUrl } from '../api'
+import { readyValue, useCatalog, useCollections } from '../catalog/resources'
 import { useTexture } from '../store/atlasTextures'
 import { ROOM } from '../store/constants'
 import { FONTS } from '../theme/fonts'
 import { PALETTE } from '../theme/palette'
 import { corkTexture, crtTexture, noteTexture } from '../theme/textures'
 import { BULLETIN, COUNTER, FIXTURES, GATE } from './anchors'
-import { BoardScreening, PollNote } from './BoardScreening'
+import { bestPictureFilms, pickFilm } from './nowPlaying'
 
 const blockPointer = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
+
+const HANDSET_Y = 0.1
+const RING = {
+  seconds: 1.8,
+  burst: 0.55,
+  gap: 0.8,
+  rate: 38,
+  lift: 0.022,
+  tilt: 0.28,
+  sway: 0.008,
+} as const
 
 export function Counter() {
   const { minX, maxX, minZ, maxZ, height } = COUNTER
@@ -125,33 +142,27 @@ export function HangingLogo() {
 }
 
 const NOTES = [
-  { lines: ['NEXT SCREENING', 'Date to be set', 'Check back soon'], x: -0.36, y: 0.04, tilt: 0.05 },
   {
-    lines: ['SUGGESTIONS', 'Drop a film in', 'the box on the', 'counter'],
-    x: 0.02,
-    y: -0.1,
+    lines: ['MEMBERS', 'card required', 'for new', 'releases'],
+    x: 0.08,
+    y: -0.14,
     tilt: -0.04,
   },
   {
-    lines: ['RSVP', 'The phone line', 'opens with the', 'next screening'],
+    lines: ['BE KIND', 'REWIND', 'or it is a', 'dollar'],
     x: 0.38,
-    y: 0.08,
+    y: 0.12,
     tilt: 0.07,
   },
 ]
 
-function PlaceholderNotes({ poll }: { poll: Poll | null }) {
+function PinnedNotes() {
   const notes = useMemo(() => NOTES.map((note, i) => noteTexture(note.lines, i + 11)), [])
-  const skipped = poll === null ? '' : 'SUGGESTIONS'
-  const shown = NOTES.map((note, i) => ({ note, i })).filter(
-    ({ note }) => note.lines[0] !== skipped,
-  )
   return (
     <>
-      {shown.map(({ note, i }) => (
+      {NOTES.map((note, i) => (
         <PinnedNote key={note.lines[0]} note={note} texture={notes[i]} index={i} />
       ))}
-      {poll === null ? null : <PollNote poll={poll} />}
     </>
   )
 }
@@ -181,13 +192,14 @@ function PinnedNote({
 
 export function BulletinBoard() {
   const cork = useMemo(() => corkTexture(), [])
-  const next = useScreenings((state) => state.next)
-  const schedule = useScreenings((state) => state.schedule)
-  const later = useMemo(() => laterScreenings(schedule, next), [schedule, next])
-  const poll = usePoll((state) => openPollOf(state.poll))
-  const showLater = usePoll((state) => state.boardSchedule)
   return (
-    <group position={[...FIXTURES.bulletin]} rotation={[0, BULLETIN.yaw, 0]}>
+    <group
+      position={[...FIXTURES.bulletin]}
+      rotation={[0, BULLETIN.yaw, 0]}
+      onPointerOver={blockPointer}
+      onPointerMove={blockPointer}
+      onClick={blockPointer}
+    >
       {[-0.56, 0.56].map((x) => (
         <mesh key={x} position={[x, -0.5, -0.03]}>
           <boxGeometry args={[0.05, 1.9, 0.05]} />
@@ -213,20 +225,65 @@ export function BulletinBoard() {
         letterSpacing={0.18}
         color={PALETTE.gold}
       >
-        MOVIE CLUB
+        NOW PLAYING
       </Text>
-      {next === null ? (
-        <PlaceholderNotes poll={poll} />
-      ) : (
-        <BoardScreening next={next} later={later} poll={poll} showLater={showLater} />
-      )}
+      <NowPlayingPoster />
+      <PinnedNotes />
+    </group>
+  )
+}
+
+const POSTER = { width: 0.34, height: 0.51, x: -0.3, y: 0.02 }
+
+function NowPlayingPoster() {
+  const catalog = readyValue(useCatalog())
+  const collections = readyValue(useCollections())
+  const films = useMemo(() => bestPictureFilms(collections, catalog), [collections, catalog])
+  // One winner per visit, chosen when the shelf of candidates first arrives.
+  const roll = useMemo(() => Math.random(), [])
+  const film = pickFilm(films, roll)
+  const texture = useTexture(film ? posterUrl(film) : null)
+  if (!film || !texture) {
+    return null
+  }
+  return (
+    <group position={[POSTER.x, POSTER.y, 0.03]}>
+      <mesh position={[0, 0, -0.002]}>
+        <planeGeometry args={[POSTER.width + 0.02, POSTER.height + 0.02]} />
+        <meshBasicMaterial color={PALETTE.cream} />
+      </mesh>
+      <mesh>
+        <planeGeometry args={[POSTER.width, POSTER.height]} />
+        {/* the map arrives after mount, so the material needs a key tied to it */}
+        <meshBasicMaterial key={texture.uuid} map={texture} />
+      </mesh>
+      <mesh position={[0, POSTER.height / 2 + 0.012, 0.004]}>
+        <sphereGeometry args={[0.012, 10, 8]} />
+        <meshLambertMaterial color={PALETTE.rustBright} />
+      </mesh>
+      <Text
+        font={FONTS.display}
+        position={[0, -POSTER.height / 2 - 0.045, 0.004]}
+        fontSize={0.035}
+        maxWidth={POSTER.width + 0.12}
+        textAlign="center"
+        anchorY="top"
+        color={PALETTE.ink}
+      >
+        {film.year === null ? film.title : `${film.title} (${film.year})`}
+      </Text>
     </group>
   )
 }
 
 export function SuggestionBox() {
   return (
-    <group position={[...FIXTURES.suggestion]}>
+    <group
+      position={[...FIXTURES.suggestion]}
+      onPointerOver={blockPointer}
+      onPointerMove={blockPointer}
+      onClick={blockPointer}
+    >
       <mesh position={[0, 0.15, 0]}>
         <boxGeometry args={[0.26, 0.3, 0.26]} />
         <meshLambertMaterial color={PALETTE.wood} />
@@ -280,35 +337,72 @@ function cordGeometry() {
   return new TubeGeometry(new CatmullRomCurve3(points), 320, 0.0035, 6, false)
 }
 
-export function Telephone() {
+/** Two bursts, the way a phone rings: shake, pause, shake, then settle. */
+export function ringShake(elapsed: number): { lift: number; tilt: number; sway: number } {
+  const burst = elapsed < RING.burst || (elapsed > RING.gap && elapsed < RING.gap + RING.burst)
+  const fade = Math.max(0, 1 - elapsed / RING.seconds)
+  const wobble = burst ? Math.sin(elapsed * RING.rate) * fade : 0
+  return {
+    lift: Math.abs(wobble) * RING.lift,
+    tilt: wobble * RING.tilt,
+    sway: wobble * RING.sway,
+  }
+}
+
+export function Telephone({ rings = 0 }: { rings?: number }) {
   const cord = useMemo(cordGeometry, [])
+  const body = useRef<Group>(null)
+  const handset = useRef<Group>(null)
+  const started = useRef(-1)
+  const clock = useRef(0)
+
+  if (started.current !== rings) {
+    started.current = rings
+    clock.current = 0
+  }
+
+  useFrame((_, dt) => {
+    const cradle = handset.current
+    const whole = body.current
+    if (!cradle || !whole || rings === 0) {
+      return
+    }
+    clock.current = Math.min(clock.current + dt, RING.seconds)
+    const { lift, tilt, sway } = ringShake(clock.current)
+    cradle.position.y = HANDSET_Y + lift
+    cradle.rotation.z = tilt
+    whole.position.x = sway
+  })
+
   return (
     <group position={[...FIXTURES.telephone]}>
-      <mesh position={[0, 0.035, 0]}>
-        <boxGeometry args={[0.18, 0.07, 0.22]} />
-        <meshLambertMaterial color={PALETTE.rustBright} />
-      </mesh>
-      {KEYPAD.map((key) => (
-        <mesh key={key.id} position={[key.x, 0.073, key.z]}>
-          <boxGeometry args={[0.026, 0.006, 0.012]} />
-          <meshLambertMaterial color={PALETTE.cream} />
-        </mesh>
-      ))}
-      <group position={[0, 0.1, -0.05]}>
-        <mesh rotation={[0, 0, Math.PI / 2]}>
-          <capsuleGeometry args={[0.02, 0.15, 4, 10]} />
+      <group ref={body}>
+        <mesh position={[0, 0.035, 0]}>
+          <boxGeometry args={[0.18, 0.07, 0.22]} />
           <meshLambertMaterial color={PALETTE.rustBright} />
         </mesh>
-        {[-0.095, 0.095].map((x) => (
-          <mesh key={x} position={[x, -0.012, 0]}>
-            <sphereGeometry args={[0.032, 12, 10]} />
-            <meshLambertMaterial color={PALETTE.rustBright} />
+        {KEYPAD.map((key) => (
+          <mesh key={key.id} position={[key.x, 0.073, key.z]}>
+            <boxGeometry args={[0.026, 0.006, 0.012]} />
+            <meshLambertMaterial color={PALETTE.cream} />
           </mesh>
         ))}
+        <group ref={handset} position={[0, HANDSET_Y, -0.05]}>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <capsuleGeometry args={[0.02, 0.15, 4, 10]} />
+            <meshLambertMaterial color={PALETTE.rustBright} />
+          </mesh>
+          {[-0.095, 0.095].map((x) => (
+            <mesh key={x} position={[x, -0.012, 0]}>
+              <sphereGeometry args={[0.032, 12, 10]} />
+              <meshLambertMaterial color={PALETTE.rustBright} />
+            </mesh>
+          ))}
+        </group>
+        <mesh geometry={cord}>
+          <meshLambertMaterial color={PALETTE.ink} side={DoubleSide} />
+        </mesh>
       </group>
-      <mesh geometry={cord}>
-        <meshLambertMaterial color={PALETTE.ink} side={DoubleSide} />
-      </mesh>
     </group>
   )
 }

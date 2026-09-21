@@ -56,5 +56,4 @@ def test_site_info(api):
     assert api.get("/api/site").json() == {
         "emby_url": "http://emby.test",
         "emby_server_id": "server-1",
-        "club_url": "https://criterion.therewillbecinema.com/movie-club",
     }

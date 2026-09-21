@@ -10,7 +10,6 @@ SHORT = "public, max-age=300"
 _POLICY = {
     "/api/posters/": IMMUTABLE,
     "/api/thumbs/": IMMUTABLE,
-    "/api/club-art/": IMMUTABLE,
     "/api/atlases/index.json": SHORT,
     "/api/atlases/": IMMUTABLE,
 }
@@ -29,7 +28,7 @@ class CacheHeaderMiddleware(BaseHTTPMiddleware):
 
 
 def mount_static(app: FastAPI, data_dir: Path) -> None:
-    for name in ("posters", "thumbs", "atlases", "club-art"):
+    for name in ("posters", "thumbs", "atlases"):
         (data_dir / name).mkdir(parents=True, exist_ok=True)
         app.mount(f"/api/{name}", StaticFiles(directory=data_dir / name), name=name)
     app.add_middleware(CacheHeaderMiddleware)

@@ -10,15 +10,9 @@ from PIL import Image
 
 from cinema.config import Settings
 from cinema.db.connection import connect
-from cinema.emby.auth import InvalidLogin
-from cinema.emby.models import EmbyUser
 from cinema.main import create_app
 
 FIXTURES = Path(__file__).parent / "fixtures"
-EMBY_ACCOUNTS = {
-    "ryan": ("projector", EmbyUser(id="u-ryan", name="Ryan")),
-    "guest": ("", EmbyUser(id="u-guest", name="Guest")),
-}
 
 
 def _png(color: tuple[int, int, int]) -> bytes:
@@ -39,12 +33,6 @@ class FakeEmby:
 
     async def server_id(self) -> str | None:
         return "server-1"
-
-    async def authenticate(self, username: str, password: str) -> EmbyUser:
-        expected, user = EMBY_ACCOUNTS.get(username.casefold(), (None, None))
-        if user is None or password != expected:
-            raise InvalidLogin(username)
-        return user
 
     async def iter_items(self, since: str | None = None, **_: object) -> AsyncIterator[dict]:
         self.since_calls.append(since)
@@ -100,8 +88,6 @@ def settings(data_dir: Path) -> Settings:
         admin_token="secret-token",
         data_dir=data_dir,
         sync_interval_hours=1000,
-        session_secret="test-session-secret",
-        club_admins="Ryan",
     )
 
 

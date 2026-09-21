@@ -1,7 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import type { Camera, PerspectiveCamera } from 'three'
-import { ANCHORS, type AnchorId, type FixtureId } from '../lobby/anchors'
+import { ANCHORS, type AnchorId } from '../lobby/anchors'
 import type { Pose } from '../scene/math'
 import { useScene } from '../shell/sceneState'
 import {
@@ -36,12 +36,11 @@ interface FrameResult {
   arrived: boolean
 }
 
-const TARGETS: Record<RigMode, (focus: FixtureId | null) => AnchorId | null> = {
-  intro: () => 'counter',
-  counter: () => 'counter',
-  focus: (focus) => focus ?? 'counter',
-  entering: () => 'storeEntry',
-  free: () => null,
+const TARGETS: Record<RigMode, AnchorId | null> = {
+  intro: 'counter',
+  counter: 'counter',
+  entering: 'storeEntry',
+  free: null,
 }
 
 const ARRIVE: Partial<Record<RigMode, (scene: Scene) => void>> = {
@@ -86,7 +85,6 @@ function roamStore({ pose, input, scene, dt, colliders }: StepContext): Pose {
 const STEPPERS: Record<RigMode, (context: StepContext) => Pose> = {
   intro: hold,
   counter: lookAroundLobby,
-  focus: lookAroundLobby,
   entering: hold,
   free: roamStore,
 }
@@ -121,13 +119,12 @@ export function PlayerRig({ colliders, active }: Props) {
   const camera = useThree((state) => state.camera)
   const canvas = useScene((state) => state.canvas)
   const mode = useScene((state) => state.mode)
-  const focus = useScene((state) => state.focus)
   const travel = useScene((state) => state.travel)
   const input = useFreeRoamInput(canvas, active)
   const pose = useRef<Pose>(ANCHORS.counter)
   const transition = useRef<Transition | null>(null)
   const arriveWith = useRef<string | null>(null)
-  const target = TARGETS[mode](focus)
+  const target = TARGETS[mode]
 
   useEffect(() => {
     transition.current = target ? startTransition(pose.current, ANCHORS[target]) : null

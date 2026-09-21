@@ -18,15 +18,11 @@ class Settings(BaseSettings):
     admin_token: str
 
     emby_public_url: str = ""
-    club_url: str = "https://criterion.therewillbecinema.com/movie-club"
     data_dir: Path = Path("./data")
     sync_interval_hours: float = 6.0
     log_level: str = "INFO"
     log_json: bool = False
     frontend_origin: str = "http://localhost:5173"
-    session_secret: str = ""
-    club_admins: str = ""
-    secure_cookies: bool = False
 
     @property
     def emby_base(self) -> str:
@@ -35,11 +31,6 @@ class Settings(BaseSettings):
     @property
     def emby_public(self) -> str:
         return _with_scheme(self.emby_public_url or self.emby_server_url)
-
-    @property
-    def club_admin_names(self) -> frozenset[str]:
-        names = (name.strip().casefold() for name in self.club_admins.split(","))
-        return frozenset(name for name in names if name)
 
 
 @lru_cache

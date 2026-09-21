@@ -3,7 +3,6 @@ import type { RigMode } from './cameraRig'
 export const BASE_FOV: Record<RigMode, number> = {
   intro: 70,
   counter: 70,
-  focus: 60,
   entering: 66,
   free: 66,
 }

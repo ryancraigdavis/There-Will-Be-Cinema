@@ -54,10 +54,7 @@ function travelTo(location: StoreLocation, itemId: string | null) {
 function keyAction(event: KeyboardEvent): (() => void) | null {
   const scene = useScene.getState()
   const choices: [boolean, () => void][] = [
-    [
-      OPEN_KEYS.has(event.code) && !typing(event.target) && scene.mode !== 'intro' && !scene.sheet,
-      toggleGuide,
-    ],
+    [OPEN_KEYS.has(event.code) && !typing(event.target) && scene.mode !== 'intro', toggleGuide],
     [event.code === 'Escape' && scene.guide, closeGuide],
   ]
   return choices.find(([when]) => when)?.[1] ?? null

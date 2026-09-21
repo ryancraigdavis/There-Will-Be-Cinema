@@ -1,12 +1,11 @@
 import { clamp, distance, lerp, lerpAngle, lerpVec3, type Pose, wrapAngle } from '../scene/math'
 
-export type RigMode = 'intro' | 'counter' | 'focus' | 'entering' | 'free'
-export type RigEvent = 'enter' | 'focus' | 'back' | 'walk' | 'arrived'
+export type RigMode = 'intro' | 'counter' | 'entering' | 'free'
+export type RigEvent = 'enter' | 'back' | 'walk' | 'arrived'
 
 const TRANSITIONS: Record<RigMode, Partial<Record<RigEvent, RigMode>>> = {
   intro: { enter: 'counter' },
-  counter: { focus: 'focus', walk: 'entering' },
-  focus: { focus: 'focus', back: 'counter', walk: 'entering' },
+  counter: { walk: 'entering' },
   entering: { arrived: 'free', back: 'counter' },
   free: { back: 'counter' },
 }

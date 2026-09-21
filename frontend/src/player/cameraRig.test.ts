@@ -16,15 +16,11 @@ const b: Pose = { position: [2, 1.2, -2], yaw: -3, pitch: -0.4 }
 describe('nextMode', () => {
   it.each([
     ['intro', 'enter', 'counter'],
-    ['counter', 'focus', 'focus'],
     ['counter', 'walk', 'entering'],
-    ['focus', 'back', 'counter'],
-    ['focus', 'focus', 'focus'],
     ['entering', 'arrived', 'free'],
     ['free', 'back', 'counter'],
     ['counter', 'arrived', 'counter'],
     ['intro', 'walk', 'intro'],
-    ['free', 'focus', 'free'],
   ] as const)('%s + %s -> %s', (mode, event, expected) => {
     expect(nextMode(mode, event)).toBe(expected)
   })

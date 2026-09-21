@@ -17,7 +17,6 @@ import { StoreScene } from '../store/StoreScene'
 import { Guide } from '../ui/Guide'
 import { Hud } from '../ui/Hud'
 import { IntroOverlay, PauseOverlay } from '../ui/Overlays'
-import { Sheets } from '../ui/Sheets'
 import { TouchControls } from '../ui/TouchControls'
 import { preloadGlyphs } from '../ui3d/glyphs'
 
@@ -82,13 +81,11 @@ export function StorePage({ active }: { active: boolean }) {
     const publish = (state: ReturnType<typeof useScene.getState>) => {
       window.__scene = {
         mode: state.mode,
-        focus: state.focus,
         selected: state.selected,
         hoverLabel: state.hoverLabel,
         locked: state.locked,
         paused: state.paused,
         guide: state.guide,
-        sheet: state.sheet,
       }
     }
     publish(useScene.getState())
@@ -101,7 +98,6 @@ export function StorePage({ active }: { active: boolean }) {
       const scene = useScene.getState()
       scene.setHover(null)
       scene.setGuide(false)
-      scene.setSheet(null)
       scene.setPaused(scene.mode === 'free')
     }
   }, [active])
@@ -123,7 +119,6 @@ export function StorePage({ active }: { active: boolean }) {
       )}
       <Hud site={site} />
       <Guide catalog={catalog} plan={plan} active={active} />
-      <Sheets active={active} />
       <IntroOverlay catalog={catalog} site={site} webgl={webgl} />
       <TouchControls />
       <PauseOverlay />

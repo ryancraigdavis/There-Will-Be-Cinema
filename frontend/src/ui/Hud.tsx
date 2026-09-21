@@ -1,19 +1,15 @@
 import { Link } from 'react-router'
 import { embyHomeUrl } from '../api'
 import type { SiteInfo } from '../catalog/types'
-import { useClubSession } from '../club/session'
-import { FIXTURE_IDS, FIXTURE_LABELS } from '../lobby/anchors'
 import { enterStore } from '../lobby/Lobby'
 import type { RigMode } from '../player/cameraRig'
 import { releaseLock } from '../player/pointerLock'
 import { useScene } from '../shell/sceneState'
 import { openGuide } from './Guide'
 import { ExternalMark } from './icons'
-import { openAccount } from './Sheets'
 
 const LOBBY_HINTS: Partial<Record<RigMode, string>> = {
-  counter: 'Drag to look around. Click something in the lobby, or head through the gate.',
-  focus: 'Press Esc to step back to the counter.',
+  counter: 'Drag to look around. Try the machines or the phone, or head through the gate.',
 }
 
 const coarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? false
@@ -31,15 +27,6 @@ function freeHint(selected: boolean, locked: boolean): string {
 export function backToCounter() {
   useScene.getState().dispatch('back')
   releaseLock()
-}
-
-function AccountChip() {
-  const name = useClubSession((state) => state.session.name)
-  return (
-    <button type="button" className="chip" onClick={openAccount}>
-      {name ?? 'Sign in'}
-    </button>
-  )
 }
 
 function HudBar({ site, inStore }: { site: SiteInfo | null; inStore: boolean }) {
@@ -66,28 +53,14 @@ function HudBar({ site, inStore }: { site: SiteInfo | null; inStore: boolean }) 
         >
           Emby <ExternalMark />
         </a>
-        <AccountChip />
       </div>
     </div>
   )
 }
 
 function LobbyMenu() {
-  const focus = useScene((state) => state.focus)
-  const dispatch = useScene((state) => state.dispatch)
   return (
     <nav className="lobby-menu" aria-label="Lobby">
-      {FIXTURE_IDS.map((id) => (
-        <button
-          key={id}
-          type="button"
-          className="chip"
-          aria-pressed={focus === id}
-          onClick={() => dispatch('focus', id)}
-        >
-          {FIXTURE_LABELS[id]}
-        </button>
-      ))}
       <button type="button" className="button lobby-menu__enter" onClick={enterStore}>
         Enter the store
       </button>
@@ -101,7 +74,7 @@ export function Hud({ site }: { site: SiteInfo | null }) {
   const locked = useScene((state) => state.locked)
   const selected = useScene((state) => state.selected)
   const paused = useScene((state) => state.paused)
-  const inLobby = mode === 'counter' || mode === 'focus'
+  const inLobby = mode === 'counter'
   const hint = mode === 'free' ? freeHint(selected !== null, locked) : LOBBY_HINTS[mode]
   return (
     <div className="hud" data-mode={mode}>

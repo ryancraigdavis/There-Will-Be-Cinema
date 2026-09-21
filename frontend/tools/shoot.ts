@@ -11,8 +11,9 @@ function arg(name: string, fallback: string): string {
   return hit ? hit.slice(name.length + 3) : fallback
 }
 
-const width = Number(arg('width', '1280'))
-const height = Number(arg('height', '720'))
+const mobile = process.argv.includes('--mobile')
+const width = Number(arg('width', mobile ? '390' : '1280'))
+const height = Number(arg('height', mobile ? '844' : '720'))
 const url = arg('url', 'http://localhost:5173/')
 
 const settle = (page: Page, frames = 30) =>
@@ -140,7 +141,6 @@ const browser = await chromium.launch({
     '--hide-scrollbars',
   ],
 })
-const mobile = process.argv.includes('--mobile')
 const page = await browser.newPage({
   viewport: { width, height },
   deviceScaleFactor: 1,

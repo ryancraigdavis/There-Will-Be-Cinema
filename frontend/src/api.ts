@@ -59,7 +59,7 @@ export function toCatalog(raw: RawCatalog): Catalog {
 }
 
 export function toSite(raw: RawSite): SiteInfo {
-  return { embyUrl: raw.emby_url, embyServerId: raw.emby_server_id, clubUrl: raw.club_url }
+  return { embyUrl: raw.emby_url, embyServerId: raw.emby_server_id }
 }
 
 async function getJson<T>(path: string): Promise<T> {

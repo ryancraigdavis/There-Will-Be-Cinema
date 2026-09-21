@@ -11,5 +11,4 @@ async def site(request: Request) -> dict:
     return {
         "emby_url": settings.emby_public,
         "emby_server_id": await request.app.state.emby.server_id(),
-        "club_url": settings.club_url,
     }

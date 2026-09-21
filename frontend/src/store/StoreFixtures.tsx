@@ -105,7 +105,7 @@ export function StoreFixtures({ site }: { site: SiteInfo | null }) {
   const mode = useScene((state) => state.mode)
   const paused = useScene((state) => state.paused)
   const navigate = useNavigate()
-  const active = !paused && (mode === 'counter' || mode === 'focus' || mode === 'free')
+  const active = !paused && (mode === 'counter' || mode === 'free')
 
   const openCatalog = () => {
     releaseLock()

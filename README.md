@@ -1,14 +1,14 @@
 # There Will Be Cinema
 
 A personal movie site built as a walkable, early-90s video store. You arrive at the front
-counter; the lobby fixtures (bulletin board, suggestion box, telephone) belong to the movie
-club, and past the gate the aisles hold every film and series on the Emby server.
+counter, where the fixtures are period dressing — a Now Playing board, a suggestion box, a beige
+phone — and past the gate the aisles hold every film and series on the Emby server.
 
 ## Layout
 
 ```
 backend/   FastAPI + SQLite: syncs the Emby library, caches posters, builds texture atlases
-frontend/  React + React Three Fiber: the 3D store (/), catalog search (/search), club redirect (/club)
+frontend/  React + React Three Fiber: the 3D store (/) and catalog search (/search)
 artifacts/ source art (logo, framed store art)
 ```
 
@@ -39,11 +39,12 @@ Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
 ## The store
 
 - **Walk in** from the intro. You start at the front counter; drag to look around the lobby.
-- **Lobby:** click the bulletin board, suggestion box, or telephone, or use the buttons along the
-  bottom. The camera pans to each one. Esc steps back. The catalog kiosk opens the search page and
-  the New Releases sign opens Emby.
-- **Props:** the popcorn cart beside the counter pops a batch when you click it and the gumball
-  machine turns its crank and drops a gumball into the tray; neither one leads anywhere. An oil
+- **Lobby:** the board, suggestion box and phone are scenery. The board is titled NOW PLAYING and
+  pins a poster drawn at random from the Best Picture winners in your library. The catalog kiosk
+  opens the search page and the New Releases sign opens Emby.
+- **Props:** click them and they do something in place, but none of them lead anywhere. The
+  popcorn cart pops a batch, the gumball machine turns its crank and drops a gumball into the
+  tray, and the counter phone rings in its cradle. An oil
   derrick stands off the left corner of the lobby, the There Will Be Blood poster and a Paul Thomas
   Anderson portrait hang by New Releases, and two oilfield paintings flank a lit THERE WILL BE
   CINEMA sign on the back wall of the store.
@@ -94,51 +95,9 @@ Steps: `--click=x,y`, `--click-text=`, `--click-selector=`, `--hover=x,y`, `--ke
 `--cookie=name=value` (follow it with `--goto=` so the page reloads with the cookie),
 `--fill=selector::value` (Playwright locator, value after the last `::`).
 Pass `--nolock` to test hover and clicks, since headless pointer lock reports no mouse movement, and
-`--mobile` with `--width`/`--height` for the touch layout. `--shot` settles 30 frames first, which
+`--mobile` for the touch layout, which also sets a 390x844 viewport unless you pass
+`--width`/`--height` yourself. `--shot` settles 30 frames first, which
 takes seconds under software WebGL, so catch animations mid-flight with `--flash` instead.
-
-## Movie club
-
-The club is moving in from the old Canva page in stages (see the plan's Phase 5).
-
-- **Signing in:** anyone with an account on the Emby server signs in with their Emby username and
-  password — from **Sign in** on the intro, the name chip in the HUD, or `/club/admin`. The site
-  shows its own form and never Emby's grid of users. The password goes straight to Emby; the site
-  keeps only a signed 30-day cookie with the account id and name.
-- **Admins** are the Emby usernames listed in `CLUB_ADMINS`. They get a **Dashboard** link and the
-  dashboard at `/club/admin`; everyone else who signs in is a member.
-- Sign-in stays switched off until `SESSION_SECRET` is set. Changing that secret signs everyone out.
-- Eight wrong passwords in ten minutes, from one address or for one username, lock sign-in for a
-  while.
-- **Screenings:** admins add them on the dashboard. Search the library and the poster, year and
-  synopsis fill themselves in, or switch to *Not in the library* and type the title, year and a
-  poster image address (the site downloads and keeps its own copy). Add the date, where, and a
-  message from the hosts; the card beside the form shows exactly what members will see. Only
-  *Published* screenings appear publicly; *Draft* and *Cancelled* stay on the dashboard.
-- The next published screening is the first thing on the site: the opening card, pinned to the
-  bulletin board in the lobby with the next few dates beside it, and at the top of `/club`. A
-  screening stays "next" until four hours after it starts. With nothing scheduled, the site falls
-  back to the logo panel.
-- **RSVP:** the RSVP button on the opening card, the telephone on the counter, and the `/club` page
-  (any upcoming date). Going, maybe or can't make it, plus guests and a note. Signed-in members
-  answer as their Emby account; everyone else types a name, and answering again with the same name
-  changes the answer instead of adding a second one. Nobody but the admins ever sees who's coming.
-- **Suggestions:** the suggestion box on the counter and `/club`. Search the library or type a film
-  that isn't in it, with an optional note. The dashboard inbox marks each one shortlisted,
-  scheduled or passed.
-- **Dashboard:** every screening shows its RSVP count; *Guest list* opens names, answers, guests
-  and notes with a headcount, and lets you remove a bogus entry. Deleting a screening deletes its
-  RSVPs. Anonymous RSVPs and suggestions are capped at 30 per address every ten minutes.
-- **Polls:** for when the club can't decide. On the dashboard, write a question and add two to
-  six options from the suggestions inbox, a library search, or typed titles. Polls save as
-  drafts; *Open poll* pins it to the bulletin board (as a note, plus a Vote button on the board's
-  card) and to `/club`. Only one poll is open at a time. Members vote once and can change it
-  while the poll is open: signed-in members by account, everyone else by a random id kept in
-  their browser. Admins watch live counts (with names for signed-in voters); members see results
-  only after *Close poll*, and `/club` keeps showing them for two weeks. A closed poll can be
-  reopened; a leader that came from a suggestion can be marked scheduled in one click.
-- **Board switch:** *Show upcoming dates on the bulletin board* turns the "Coming up" note on or
-  off. An open poll takes that spot on the board while it runs.
 
 ## Production stack
 
@@ -157,37 +116,13 @@ docker compose down
 | Route | Purpose |
 |---|---|
 | `GET /api/health` | item count, last sync, whether a sync is running |
-| `GET /api/site` | public Emby URL, Emby server id, club URL |
+| `GET /api/site` | public Emby URL and Emby server id |
 | `GET /api/catalog` | whole catalog, gzip + ETag |
 | `GET /api/collections` | Emby BoxSets with member ids |
 | `GET /api/posters/{id}.webp` | 400px poster |
 | `GET /api/thumbs/{id}.webp` | 128×192 thumb |
 | `GET /api/atlases/index.json`, `/api/atlases/{n}.webp` | texture atlases for the 3D store |
 | `POST /api/admin/sync?mode=full\|incremental` | bearer `ADMIN_TOKEN` |
-| `POST /api/club/login` | `{username, password}` checked against Emby; sets the session cookie |
-| `POST /api/club/logout` | clears the session cookie |
-| `GET /api/club/me` | `{name, admin}` for the current session |
-| `GET /api/club/admin/overview` | admins only (401 signed out, 403 for members) |
-| `GET /api/club/next` | the next published screening, or `null` |
-| `GET /api/club/schedule?limit=` | upcoming published screenings, soonest first |
-| `GET /api/club/admin/events` | admins: every screening with its status |
-| `POST /api/club/admin/events[/{id}]` | admins: create, or update by id |
-| `POST /api/club/admin/events/{id}/delete` | admins: delete |
-| `GET /api/club-art/{id}.webp` | cached poster for a screening that isn't in the library |
-| `POST /api/club/rsvp` | `{event_id, answer, guests, name, note}`; upserts per account or name |
-| `GET /api/club/rsvp?event_id=` | the signed-in member's own answer, or `null` |
-| `POST /api/club/suggestions` | `{item_id}` or `{title, year}`, plus `name` and `note` |
-| `GET /api/club/admin/events/{id}/rsvps` | admins: guest list and totals |
-| `POST /api/club/admin/rsvps/{id}/delete` | admins: remove an RSVP |
-| `GET /api/club/admin/suggestions` | admins: the inbox, newest first |
-| `POST /api/club/admin/suggestions/{id}[/delete]` | admins: set `{status}`, or delete |
-| `GET /api/club/poll?voter=` | the open poll, or results of one closed in the last 14 days |
-| `POST /api/club/votes` | `{poll_id, option_id, voter}`; one vote per account or browser |
-| `GET /api/club/settings` | `{board_schedule}` |
-| `POST /api/club/admin/settings` | admins: `{board_schedule}` |
-| `GET/POST /api/club/admin/polls[/{id}]` | admins: list with live counts, create, edit a draft |
-| `POST /api/club/admin/polls/{id}/status` | admins: `{status: open\|closed}` |
-| `POST /api/club/admin/polls/{id}/delete` | admins: delete a poll and its votes |
 
 ## Configuration
 
@@ -197,11 +132,7 @@ docker compose down
 | `EMBY_SERVER_API` | required |
 | `ADMIN_TOKEN` | required |
 | `EMBY_PUBLIC_URL` | `EMBY_SERVER_URL` (set this if the server URL is LAN-only; it is what "Watch on Emby" links use) |
-| `CLUB_URL` | `https://criterion.therewillbecinema.com/movie-club` |
 | `DATA_DIR` | `./data` |
 | `SYNC_INTERVAL_HOURS` | `6` |
 | `LOG_LEVEL` / `LOG_JSON` | `INFO` / `false` |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` |
-| `SESSION_SECRET` | empty, which leaves club sign-in switched off |
-| `CLUB_ADMINS` | empty; comma-separated Emby usernames allowed into the dashboard |
-| `SECURE_COOKIES` | `false`; set `true` wherever the site is served over https |

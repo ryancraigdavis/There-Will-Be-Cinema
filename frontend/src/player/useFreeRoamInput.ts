@@ -15,10 +15,9 @@ export interface RoamInput {
 type Scene = ReturnType<typeof useScene.getState>
 
 const MAX_MOVEMENT_PX = 250
-const DRAG_MODES: ReadonlySet<RigMode> = new Set(['counter', 'focus', 'free'])
+const DRAG_MODES: ReadonlySet<RigMode> = new Set(['counter', 'free'])
 
 const ESCAPE: Partial<Record<RigMode, (scene: Scene) => void>> = {
-  focus: (scene) => scene.dispatch('back'),
   entering: (scene) => scene.dispatch('back'),
   free: (scene) => (scene.selected ? scene.select(null) : scene.setPaused(true)),
 }
@@ -32,7 +31,7 @@ function isTyping(target: EventTarget | null): boolean {
 
 function handleKeyDown(event: KeyboardEvent, input: RoamInput) {
   const scene = useScene.getState()
-  if (scene.guide || scene.sheet) {
+  if (scene.guide) {
     return
   }
   if (event.code === 'Escape') {

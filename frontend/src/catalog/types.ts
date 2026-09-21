@@ -41,7 +41,6 @@ export interface RawCatalog {
 export interface RawSite {
   emby_url: string
   emby_server_id: string | null
-  club_url: string
 }
 
 export interface CatalogItem {
@@ -101,7 +100,6 @@ export interface Collection {
 export interface SiteInfo {
   embyUrl: string
   embyServerId: string | null
-  clubUrl: string
 }
 
 export interface AtlasIndex {

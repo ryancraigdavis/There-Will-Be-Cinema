@@ -68,8 +68,3 @@ class CollectionRow(BaseModel, frozen=True):
     overview: str | None = None
     image_tag: str | None = None
     item_ids: list[str] = Field(default_factory=list)
-
-
-class EmbyUser(BaseModel, frozen=True):
-    id: str
-    name: str

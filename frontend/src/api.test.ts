@@ -5,7 +5,6 @@ import { catalogFixture, rawItem } from './test/fixtures'
 const site = toSite({
   emby_url: 'https://emby.example.com',
   emby_server_id: 'srv1',
-  club_url: 'https://club.example.com',
 })
 
 describe('api helpers', () => {
