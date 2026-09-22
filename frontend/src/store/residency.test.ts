@@ -8,11 +8,12 @@ const demands = (...pairs: [number, number][]): Demand[] =>
 
 describe('nearestPerSheet', () => {
   it('keeps the nearest section of each sheet and drops slots with no atlas', () => {
+    const box = (x: number, z: number) => ({ minX: x, maxX: x, minZ: z, maxZ: z })
     const batches = [
-      { atlas: 0, center: [0, 1, -5] },
-      { atlas: 0, center: [0, 1, -1] },
-      { atlas: 3, center: [4, 1, 0] },
-      { atlas: -1, center: [0, 1, 0] },
+      { atlas: 0, bounds: box(0, -5) },
+      { atlas: 0, bounds: box(0, -1) },
+      { atlas: 3, bounds: box(4, 0) },
+      { atlas: -1, bounds: box(0, 0) },
     ]
     expect(nearestPerSheet(batches, 0, 0)).toEqual([
       { sheet: 0, distance: 1 },

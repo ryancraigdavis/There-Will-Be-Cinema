@@ -1,45 +1,46 @@
 import type { ThreeEvent } from '@react-three/fiber'
-import { useMemo } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { PALETTE } from '../theme/palette'
 import { carpetTexture, ceilingTexture } from '../theme/textures'
+import { Instanced } from '../ui3d/Instanced'
 import { ROOM } from './constants'
+import { bandTransforms, TROFFER, trofferTransforms, WALL_BANDS, type WallBand } from './room'
 
 const blockPointer = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
-const THICKNESS = 0.1
 const WIDTH = ROOM.maxX - ROOM.minX
 const DEPTH = ROOM.maxZ - ROOM.minZ
 const CENTER_X = (ROOM.maxX + ROOM.minX) / 2
 const CENTER_Z = (ROOM.maxZ + ROOM.minZ) / 2
-const TROFFER_XS = [-4.5, -1.5, 1.5, 4.5]
-const TROFFER_ZS = [-12, -9, -6, -3, 0, 3, 6]
 
-const WALLS = [
-  { key: 'left', x: ROOM.minX - THICKNESS / 2, z: CENTER_Z, length: DEPTH, yaw: Math.PI / 2 },
-  { key: 'right', x: ROOM.maxX + THICKNESS / 2, z: CENTER_Z, length: DEPTH, yaw: Math.PI / 2 },
-  { key: 'back', x: CENTER_X, z: ROOM.minZ - THICKNESS / 2, length: WIDTH, yaw: 0 },
-  { key: 'front', x: CENTER_X, z: ROOM.maxZ + THICKNESS / 2, length: WIDTH, yaw: 0 },
-]
+const BAND_MATERIALS: Record<WallBand['id'], ReactNode> = {
+  lower: <meshLambertMaterial color={PALETTE.rust} />,
+  trim: (
+    <meshLambertMaterial color={PALETTE.gold} emissive={PALETTE.gold} emissiveIntensity={0.2} />
+  ),
+  upper: <meshLambertMaterial color={PALETTE.wall} />,
+  base: <meshLambertMaterial color={PALETTE.ink} />,
+}
 
-function Wall({ x, z, length, yaw }: { x: number; z: number; length: number; yaw: number }) {
+function Walls() {
+  const bands = useMemo(
+    () => WALL_BANDS.map((band) => ({ band, transforms: bandTransforms(band) })),
+    [],
+  )
+  return bands.map(({ band, transforms }) => (
+    <Instanced key={band.id} name={`wall-${band.id}`} transforms={transforms}>
+      <boxGeometry args={[1, 1, 1]} />
+      {BAND_MATERIALS[band.id]}
+    </Instanced>
+  ))
+}
+
+function Troffers() {
+  const transforms = useMemo(trofferTransforms, [])
   return (
-    <group position={[x, 0, z]} rotation={[0, yaw, 0]}>
-      <mesh position={[0, 0.55, 0]}>
-        <boxGeometry args={[length, 1.1, THICKNESS]} />
-        <meshLambertMaterial color={PALETTE.rust} />
-      </mesh>
-      <mesh position={[0, 1.13, 0]}>
-        <boxGeometry args={[length, 0.06, THICKNESS + 0.01]} />
-        <meshLambertMaterial color={PALETTE.gold} emissive={PALETTE.gold} emissiveIntensity={0.2} />
-      </mesh>
-      <mesh position={[0, 2.08, 0]}>
-        <boxGeometry args={[length, 1.84, THICKNESS]} />
-        <meshLambertMaterial color={PALETTE.wall} />
-      </mesh>
-      <mesh position={[0, 0.05, 0]}>
-        <boxGeometry args={[length, 0.1, THICKNESS + 0.02]} />
-        <meshLambertMaterial color={PALETTE.ink} />
-      </mesh>
-    </group>
+    <Instanced name="troffers" transforms={transforms}>
+      <planeGeometry args={[...TROFFER.size]} />
+      <meshBasicMaterial color="#fff4dc" />
+    </Instanced>
   )
 }
 
@@ -91,21 +92,8 @@ export function Room() {
         <planeGeometry args={[WIDTH, DEPTH]} />
         <meshLambertMaterial map={ceiling} />
       </mesh>
-      {TROFFER_XS.flatMap((x) =>
-        TROFFER_ZS.map((z) => (
-          <mesh
-            key={`${x}:${z}`}
-            rotation={[Math.PI / 2, 0, 0]}
-            position={[x, ROOM.height - 0.01, z]}
-          >
-            <planeGeometry args={[1.2, 0.6]} />
-            <meshBasicMaterial color="#fff4dc" />
-          </mesh>
-        )),
-      )}
-      {WALLS.map(({ key, ...wall }) => (
-        <Wall key={key} {...wall} />
-      ))}
+      <Troffers />
+      <Walls />
       <FrontDoor />
     </group>
   )

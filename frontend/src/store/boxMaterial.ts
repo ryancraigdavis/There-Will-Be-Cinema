@@ -1,4 +1,4 @@
-import { MeshLambertMaterial, type Texture, Vector2, Vector3 } from 'three'
+import { MeshBasicMaterial, type Texture, Vector2, Vector3 } from 'three'
 import { BOX } from './constants'
 
 export const PULL_OUT = 0.05
@@ -6,6 +6,7 @@ export const PULL_OUT = 0.05
 const VERTEX_HEAD = /* glsl */ `#include <common>
 attribute vec3 aCell;
 attribute vec3 aSpine;
+attribute vec3 aLight;
 uniform vec2 uCellSize;
 uniform float uSpineRatio;
 uniform float uHover;
@@ -14,6 +15,7 @@ uniform vec3 uPull;
 varying vec2 vAtlasUv;
 varying float vTextured;
 varying vec3 vSpine;
+varying vec3 vLight;
 varying float vHover;
 `
 
@@ -25,6 +27,7 @@ vec2 faceUv = mix(spineUv, uv, isCover);
 vAtlasUv = aCell.xy + (faceUv * 0.98 + 0.01) * uCellSize;
 vTextured = max(isCover, isSpine) * aCell.z;
 vSpine = aSpine;
+vLight = aLight * mix(0.55, 1.0, max(isCover, isSpine));
 vHover = 1.0 - step(0.5, abs(float(gl_InstanceID) - uHover));
 float hidden = 1.0 - step(0.5, abs(float(gl_InstanceID) - uHidden));
 `
@@ -39,17 +42,14 @@ uniform float uHasAtlas;
 varying vec2 vAtlasUv;
 varying float vTextured;
 varying vec3 vSpine;
+varying vec3 vLight;
 varying float vHover;
 `
 
 const FRAGMENT_COLOR = /* glsl */ `#include <color_fragment>
 vec3 atlasColor = texture2D(uAtlas, vAtlasUv).rgb;
-diffuseColor.rgb = mix(vSpine, atlasColor, vTextured * uHasAtlas);
-diffuseColor.rgb *= 1.0 + vHover * 0.3;
-`
-
-const FRAGMENT_EMISSIVE = /* glsl */ `#include <emissivemap_fragment>
-totalEmissiveRadiance += vHover * vec3(0.18, 0.12, 0.02);
+vec3 albedo = mix(vSpine, atlasColor, vTextured * uHasAtlas);
+diffuseColor.rgb = albedo * vLight * (1.0 + vHover * 0.3) + vHover * vec3(0.18, 0.12, 0.02);
 `
 
 export interface BoxUniforms {
@@ -63,7 +63,7 @@ export interface BoxUniforms {
 }
 
 export function createBoxMaterial(cell: [number, number]): {
-  material: MeshLambertMaterial
+  material: MeshBasicMaterial
   uniforms: BoxUniforms
 } {
   const uniforms: BoxUniforms = {
@@ -75,7 +75,7 @@ export function createBoxMaterial(cell: [number, number]): {
     uHidden: { value: -1 },
     uPull: { value: new Vector3(PULL_OUT, 0, 0) },
   }
-  const material = new MeshLambertMaterial({ color: '#ffffff' })
+  const material = new MeshBasicMaterial({ color: '#ffffff' })
   material.customProgramCacheKey = () => 'twbc-vhs-box'
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
@@ -86,7 +86,6 @@ export function createBoxMaterial(cell: [number, number]): {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', FRAGMENT_HEAD)
       .replace('#include <color_fragment>', FRAGMENT_COLOR)
-      .replace('#include <emissivemap_fragment>', FRAGMENT_EMISSIVE)
   }
   return { material, uniforms }
 }

@@ -1,9 +1,7 @@
-import type { AtlasIndex } from '../catalog/types'
 import type { Vec3 } from '../scene/math'
-import { groupSlotsByAtlas, isDisplayRun } from './batches'
 import { BOX } from './constants'
 import type { Slot } from './geometry'
-import type { RunKind } from './runs'
+import type { TapeLocation } from './tapeBatches'
 
 export interface Box3 {
   min: Vec3
@@ -25,12 +23,7 @@ export interface PickHit {
   distance: number
 }
 
-export interface TapeLocation {
-  key: string
-  instance: number
-}
-
-export const batchKey = (sectionId: string, atlas: number) => `${sectionId}:${atlas}`
+export type { TapeLocation } from './tapeBatches'
 
 export function slotBounds(slot: Slot): Box3 {
   const c = Math.abs(Math.cos(slot.yaw))
@@ -50,24 +43,17 @@ function union(boxes: readonly Box3[]): Box3 {
 export interface PickSource {
   id: string
   slots: readonly Slot[]
-  run?: { kind: RunKind }
 }
 
-export function buildPickIndex(
-  sections: readonly PickSource[],
-  index: AtlasIndex | null,
-): PickSection[] {
+export type Locate = (slot: Slot) => TapeLocation | undefined
+
+export function buildPickIndex(sections: readonly PickSource[], locate: Locate): PickSection[] {
   return sections
     .map((section) => {
-      const grouped = groupSlotsByAtlas(section.slots, index, isDisplayRun(section.run?.kind))
-      const slots = grouped.flatMap((batch) =>
-        batch.slots.map((slot, instance) => ({
-          ...slotBounds(slot),
-          key: batchKey(section.id, batch.atlas),
-          instance,
-          itemId: slot.itemId,
-        })),
-      )
+      const slots = section.slots.flatMap((slot) => {
+        const location = locate(slot)
+        return location ? [{ ...slotBounds(slot), ...location, itemId: slot.itemId }] : []
+      })
       return { ...union(slots), slots }
     })
     .filter((section) => section.slots.length > 0)

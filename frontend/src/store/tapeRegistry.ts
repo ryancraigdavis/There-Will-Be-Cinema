@@ -1,5 +1,5 @@
 import type { Texture } from 'three'
-import type { Vec3 } from '../scene/math'
+import type { AABB } from '../player/collision'
 
 export interface TapeUniforms {
   uAtlas: { value: Texture | null }
@@ -11,7 +11,7 @@ export interface TapeUniforms {
 export interface TapeBatch {
   key: string
   atlas: number
-  center: Vec3
+  bounds: AABB
   uniforms: TapeUniforms
 }
 

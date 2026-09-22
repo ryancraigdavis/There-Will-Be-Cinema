@@ -1,14 +1,7 @@
 import { Text } from '@react-three/drei'
 import { type ThreeEvent, useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
-import {
-  CatmullRomCurve3,
-  DoubleSide,
-  type Group,
-  type Texture,
-  TubeGeometry,
-  Vector3,
-} from 'three'
+import { CatmullRomCurve3, type Group, type Texture, TubeGeometry, Vector3 } from 'three'
 import { posterUrl } from '../api'
 import { readyValue, useCatalog, useCollections } from '../catalog/resources'
 import { useTexture } from '../store/atlasTextures'
@@ -16,6 +9,7 @@ import { ROOM } from '../store/constants'
 import { FONTS } from '../theme/fonts'
 import { PALETTE } from '../theme/palette'
 import { corkTexture, crtTexture, noteTexture } from '../theme/textures'
+import { Instanced, type Transform } from '../ui3d/Instanced'
 import { BULLETIN, COUNTER, FIXTURES, GATE } from './anchors'
 import { bestPictureFilms, pickFilm } from './nowPlaying'
 
@@ -317,10 +311,8 @@ export function SuggestionBox() {
   )
 }
 
-const KEYPAD = Array.from({ length: 12 }, (_, i) => ({
-  id: `key-${i}`,
-  x: -0.04 + (i % 3) * 0.04,
-  z: 0.02 + Math.floor(i / 3) * 0.018,
+const KEYPAD: Transform[] = Array.from({ length: 12 }, (_, i) => ({
+  position: [-0.04 + (i % 3) * 0.04, 0.073, 0.02 + Math.floor(i / 3) * 0.018],
 }))
 
 function cordGeometry() {
@@ -334,7 +326,7 @@ function cordGeometry() {
     const coil = t * Math.PI * 2 * 14
     return base.add(new Vector3(0, Math.sin(coil) * 0.008, Math.cos(coil) * 0.008))
   })
-  return new TubeGeometry(new CatmullRomCurve3(points), 320, 0.0035, 6, false)
+  return new TubeGeometry(new CatmullRomCurve3(points), 96, 0.0035, 5, false)
 }
 
 /** Two bursts, the way a phone rings: shake, pause, shake, then settle. */
@@ -381,12 +373,10 @@ export function Telephone({ rings = 0 }: { rings?: number }) {
           <boxGeometry args={[0.18, 0.07, 0.22]} />
           <meshLambertMaterial color={PALETTE.rustBright} />
         </mesh>
-        {KEYPAD.map((key) => (
-          <mesh key={key.id} position={[key.x, 0.073, key.z]}>
-            <boxGeometry args={[0.026, 0.006, 0.012]} />
-            <meshLambertMaterial color={PALETTE.cream} />
-          </mesh>
-        ))}
+        <Instanced name="keypad" transforms={KEYPAD}>
+          <boxGeometry args={[0.026, 0.006, 0.012]} />
+          <meshLambertMaterial color={PALETTE.cream} />
+        </Instanced>
         <group ref={handset} position={[0, HANDSET_Y, -0.05]}>
           <mesh rotation={[0, 0, Math.PI / 2]}>
             <capsuleGeometry args={[0.02, 0.15, 4, 10]} />
@@ -400,7 +390,7 @@ export function Telephone({ rings = 0 }: { rings?: number }) {
           ))}
         </group>
         <mesh geometry={cord}>
-          <meshLambertMaterial color={PALETTE.ink} side={DoubleSide} />
+          <meshLambertMaterial color={PALETTE.ink} />
         </mesh>
       </group>
     </group>

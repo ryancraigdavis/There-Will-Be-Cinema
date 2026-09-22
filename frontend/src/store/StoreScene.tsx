@@ -1,3 +1,4 @@
+import { PerformanceMonitor } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import type { AtlasIndex, Catalog, SiteInfo } from '../catalog/types'
@@ -10,20 +11,18 @@ import { Decor } from '../scene/Decor'
 import { Lights } from '../theme/Lights'
 import { Banners } from './Banners'
 import { BoxDetail } from './BoxDetail'
-import { isDisplayRun } from './batches'
 import { Dividers } from './Dividers'
 import type { StorePlan } from './layout'
+import { dprAfter, type Quality, qualityFor } from './quality'
 import { Room } from './Room'
-import { ShelfBoxes, type ShelfGroup } from './ShelfInstances'
+import { ShelfBoxes } from './ShelfInstances'
 import { Shelving } from './Shelving'
 import { ShelfSigns } from './Signs'
 import { StoreFixtures } from './StoreFixtures'
 import { TapeLod } from './TapeLod'
 import { TapePicker } from './TapePicker'
+import { type RunBatch, runBatches } from './tapeBatches'
 import { ShaderWarmup, TextureUploads, WarmAtlases } from './Warmup'
-
-const PHONE_ATLAS_SIZE = 2048
-const DESKTOP_ATLAS_SIZE = 4096
 
 interface Props {
   catalog: Catalog | null
@@ -34,46 +33,52 @@ interface Props {
   active: boolean
 }
 
-function useMaxAtlasSize(): number {
+function useQuality(): Quality {
   const gl = useThree((state) => state.gl)
-  return useMemo(() => {
-    const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
-    const limit = coarse ? PHONE_ATLAS_SIZE : DESKTOP_ATLAS_SIZE
-    return Math.min(gl.capabilities.maxTextureSize, limit)
-  }, [gl])
+  return useMemo(
+    () =>
+      qualityFor({
+        coarsePointer: window.matchMedia?.('(pointer: coarse)').matches ?? false,
+        maxTextureSize: gl.capabilities.maxTextureSize,
+      }),
+    [gl],
+  )
+}
+
+function AdaptiveResolution({ quality }: { quality: Quality }) {
+  const setDpr = useThree((state) => state.setDpr)
+  return (
+    <PerformanceMonitor
+      flipflops={3}
+      onDecline={() => setDpr(dprAfter(quality, true))}
+      onIncline={() => setDpr(dprAfter(quality, false))}
+      onFallback={() => setDpr(dprAfter(quality, true))}
+    />
+  )
 }
 
 interface TapesProps {
   catalog: Catalog
   plan: StorePlan
   index: AtlasIndex | null
-  groups: ShelfGroup[]
+  batches: RunBatch[]
 }
 
-function Tapes({ catalog, plan, index, groups }: TapesProps) {
+function Tapes({ catalog, plan, index, batches }: TapesProps) {
   return (
     <>
-      {groups.map((group) => (
-        <ShelfBoxes key={group.id} group={group} catalog={catalog} index={index} />
+      {batches.map((batch) => (
+        <ShelfBoxes key={batch.key} batch={batch} catalog={catalog} index={index} />
       ))}
-      <TapePicker sections={plan.sections} index={index} catalog={catalog} />
+      <TapePicker sections={plan.sections} batches={batches} catalog={catalog} />
     </>
   )
 }
 
 export function StoreScene({ catalog, plan, site, atlasIndex, atlasSettled, active }: Props) {
-  const maxAtlasSize = useMaxAtlasSize()
+  const quality = useQuality()
   const colliders = useMemo(() => sceneColliders(plan), [plan])
-  const groups = useMemo<ShelfGroup[]>(
-    () =>
-      (plan?.sections ?? []).map(({ id, slots, center, run }) => ({
-        id,
-        slots,
-        center,
-        display: isDisplayRun(run.kind),
-      })),
-    [plan],
-  )
+  const batches = useMemo(() => runBatches(plan?.sections ?? [], atlasIndex), [plan, atlasIndex])
 
   return (
     <>
@@ -86,18 +91,19 @@ export function StoreScene({ catalog, plan, site, atlasIndex, atlasSettled, acti
         <Decor />
         {plan && <Banners banners={plan.banners} />}
         <StoreFixtures site={site} />
-        {plan && <ShelfSigns signs={plan.signs} />}
+        {plan && <ShelfSigns signs={plan.signs} banners={plan.banners} />}
       </Suspense>
       {catalog && plan && atlasSettled && (
-        <Tapes catalog={catalog} plan={plan} index={atlasIndex} groups={groups} />
+        <Tapes catalog={catalog} plan={plan} index={atlasIndex} batches={batches} />
       )}
-      <TapeLod index={atlasIndex} maxSize={maxAtlasSize} />
+      <TapeLod index={atlasIndex} quality={quality} />
+      <AdaptiveResolution quality={quality} />
       <Suspense fallback={null}>
         {catalog && <BoxDetail catalog={catalog} site={site} colliders={colliders} />}
       </Suspense>
       <PlayerRig colliders={colliders} active={active} />
       <TextureUploads />
-      <WarmAtlases index={atlasIndex} maxSize={maxAtlasSize} />
+      <WarmAtlases index={atlasIndex} maxSize={quality.maxAtlasSize} />
       <ShaderWarmup ready={plan !== null && atlasIndex !== null} />
       {BENCH && <BenchDriver plan={plan} />}
     </>

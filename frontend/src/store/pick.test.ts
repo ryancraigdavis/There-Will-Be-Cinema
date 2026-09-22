@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import type { AtlasIndex } from '../catalog/types'
 import type { Slot } from './geometry'
-import { buildPickIndex, pickTape, rayBox, slotBounds, tapeLocations } from './pick'
+import {
+  buildPickIndex,
+  type PickSource,
+  pickTape,
+  rayBox,
+  slotBounds,
+  tapeLocations,
+} from './pick'
+import type { RunKind } from './runs'
+import { runBatches, slotLocations } from './tapeBatches'
 
 const index: AtlasIndex = {
   cell: [128, 192],
@@ -18,13 +27,19 @@ const index: AtlasIndex = {
 const row = (...ids: string[]): Slot[] =>
   ids.map((itemId, i) => ({ itemId, position: [i * 0.125, 1, -1], yaw: -Math.PI / 2 }))
 
-const sections = buildPickIndex(
-  [
-    { id: 's1', slots: row('a', 'b', 'c') },
-    { id: 's2', slots: [{ itemId: 'twin', position: [0, 1, -3], yaw: -Math.PI / 2 }] },
-  ],
-  index,
-)
+function pickIndex(sources: (PickSource & { kind?: RunKind })[]) {
+  const withRuns = sources.map((source) => ({
+    ...source,
+    run: { id: source.id.split('-')[0] ?? source.id, kind: source.kind ?? ('genre' as const) },
+  }))
+  const located = slotLocations(runBatches(withRuns, index))
+  return buildPickIndex(withRuns, (slot) => located.get(slot))
+}
+
+const sections = pickIndex([
+  { id: 's1', slots: row('a', 'b', 'c') },
+  { id: 's2', slots: [{ itemId: 'twin', position: [0, 1, -3], yaw: -Math.PI / 2 }] },
+])
 
 describe('slotBounds', () => {
   it.each([
@@ -77,23 +92,17 @@ describe('pickTape', () => {
 
 describe('display runs', () => {
   it('batches an endcap by its display sheet', () => {
-    const [endcap] = buildPickIndex(
-      [{ id: 'e', slots: row('a', 'b'), run: { kind: 'endcap' } }],
-      index,
-    )
+    const [endcap] = pickIndex([{ id: 'e', slots: row('a', 'b'), kind: 'endcap' }])
     expect(endcap?.slots.map((slot) => slot.key)).toEqual(['e:5', 'e:5'])
   })
 })
 
 describe('tapeLocations', () => {
   it('maps every film to each place it sits', () => {
-    const twice = buildPickIndex(
-      [
-        { id: 'genre', slots: row('a') },
-        { id: 'endcap', slots: row('a', 'b') },
-      ],
-      index,
-    )
+    const twice = pickIndex([
+      { id: 'genre', slots: row('a') },
+      { id: 'endcap', slots: row('a', 'b') },
+    ])
     expect(tapeLocations(twice).get('a')).toEqual([
       { key: 'genre:0', instance: 0 },
       { key: 'endcap:0', instance: 0 },

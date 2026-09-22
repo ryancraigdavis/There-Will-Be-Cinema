@@ -2,7 +2,7 @@ import type { ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import type { Intersection, Object3D, Raycaster } from 'three'
 import { Vector3 } from 'three'
-import type { AtlasIndex, Catalog } from '../catalog/types'
+import type { Catalog } from '../catalog/types'
 import { perf } from '../perf/perf'
 import { useScene } from '../shell/sceneState'
 import { PICK_DISTANCE } from './lod'
@@ -14,6 +14,7 @@ import {
   pickTape,
   tapeLocations,
 } from './pick'
+import { type RunBatch, slotLocations } from './tapeBatches'
 import { setUniform } from './tapeRegistry'
 
 const CLICK_SLOP_PX = 4
@@ -75,12 +76,16 @@ function useHiddenTape(locations: Map<string, { key: string; instance: number }[
 
 interface Props {
   sections: readonly PickSource[]
-  index: AtlasIndex | null
+  batches: readonly RunBatch[]
   catalog: Catalog
 }
 
-export function TapePicker({ sections, index, catalog }: Props) {
-  const pickIndex = useMemo(() => buildPickIndex(sections, index), [sections, index])
+export function TapePicker({ sections, batches, catalog }: Props) {
+  const located = useMemo(() => slotLocations(batches), [batches])
+  const pickIndex = useMemo(
+    () => buildPickIndex(sections, (slot) => located.get(slot)),
+    [sections, located],
+  )
   const locations = useMemo(() => tapeLocations(pickIndex), [pickIndex])
   const raycast = useMemo(() => raycastTapes(pickIndex), [pickIndex])
   const hovered = useRef<PickSlot | null>(null)

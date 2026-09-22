@@ -11,21 +11,15 @@ import {
 } from 'three'
 import type { AtlasIndex, Catalog } from '../catalog/types'
 import { perf } from '../perf/perf'
-import type { Vec3 } from '../scene/math'
+import { LIGHT_RIG } from '../theme/lightRig'
 import { spineColor } from '../theme/palette'
-import { cellOrigin, cellSize, groupSlotsByAtlas } from './batches'
+import { cellOrigin, cellSize } from './batches'
 import { createBoxMaterial } from './boxMaterial'
 import { BOX } from './constants'
 import type { Slot } from './geometry'
-import { batchKey } from './pick'
+import type { RunBatch } from './tapeBatches'
+import { bakeLight, coverNormal } from './tapeLight'
 import { registerBatch } from './tapeRegistry'
-
-export interface ShelfGroup {
-  id: string
-  slots: Slot[]
-  center: Vec3
-  display: boolean
-}
 
 const BASE = new BoxGeometry(BOX.spine, BOX.height, BOX.cover)
 const UP = new Vector3(0, 1, 0)
@@ -44,15 +38,18 @@ function batchGeometry(
   const geometry = BASE.clone()
   const cells = new Float32Array(slots.length * 3)
   const spines = new Float32Array(slots.length * 3)
+  const lights = new Float32Array(slots.length * 3)
   const color = new Color()
   slots.forEach((slot, i) => {
     const [r, g, b] = spineColor(catalog.byId.get(slot.itemId)?.primaryGenre ?? '', slot.itemId)
     color.setRGB(r, g, b, SRGBColorSpace)
     cells.set(cellOrigin(slot.itemId, index, display), i * 3)
     spines.set([color.r, color.g, color.b], i * 3)
+    lights.set(bakeLight(slot.position, coverNormal(slot.yaw), LIGHT_RIG), i * 3)
   })
   geometry.setAttribute('aCell', new InstancedBufferAttribute(cells, 3))
   geometry.setAttribute('aSpine', new InstancedBufferAttribute(spines, 3))
+  geometry.setAttribute('aLight', new InstancedBufferAttribute(lights, 3))
   return geometry
 }
 
@@ -63,16 +60,13 @@ function slotMatrix(slot: Slot): Matrix4 {
 }
 
 interface BatchProps {
-  id: string
-  slots: Slot[]
-  atlas: number
+  batch: RunBatch
   index: AtlasIndex | null
   catalog: Catalog
-  center: Vec3
-  display: boolean
 }
 
-function BoxBatch({ id, slots, atlas, index, catalog, center, display }: BatchProps) {
+export function ShelfBoxes({ batch, index, catalog }: BatchProps) {
+  const { key, slots, atlas, display, bounds } = batch
   const mesh = useRef<InstancedMesh>(null)
   const { material, uniforms } = useMemo(() => createBoxMaterial(cellSize(index)), [index])
   const geometry = useMemo(
@@ -81,10 +75,7 @@ function BoxBatch({ id, slots, atlas, index, catalog, center, display }: BatchPr
   )
   perf.count('render.BoxBatch')
 
-  useEffect(
-    () => registerBatch({ key: batchKey(id, atlas), atlas, center, uniforms }),
-    [id, atlas, center, uniforms],
-  )
+  useEffect(() => registerBatch({ key, atlas, bounds, uniforms }), [key, atlas, bounds, uniforms])
 
   useEffect(
     () => () => {
@@ -116,29 +107,4 @@ function BoxBatch({ id, slots, atlas, index, catalog, center, display }: BatchPr
       raycast={noRaycast}
     />
   )
-}
-
-interface ShelfBoxesProps {
-  group: ShelfGroup
-  catalog: Catalog
-  index: AtlasIndex | null
-}
-
-export function ShelfBoxes({ group, catalog, index }: ShelfBoxesProps) {
-  const batches = useMemo(
-    () => groupSlotsByAtlas(group.slots, index, group.display),
-    [group.slots, index, group.display],
-  )
-  return batches.map((batch) => (
-    <BoxBatch
-      key={`${group.id}:${batch.atlas}`}
-      id={group.id}
-      slots={batch.slots}
-      atlas={batch.atlas}
-      index={index}
-      catalog={catalog}
-      center={group.center}
-      display={group.display}
-    />
-  ))
 }

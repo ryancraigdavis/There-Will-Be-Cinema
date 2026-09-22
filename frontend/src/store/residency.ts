@@ -1,3 +1,6 @@
+import type { AABB } from '../player/collision'
+import { distanceToBounds } from './tapeBatches'
+
 export interface Demand {
   sheet: number
   distance: number
@@ -22,13 +25,13 @@ export interface Plan {
 }
 
 export function nearestPerSheet(
-  batches: readonly { atlas: number; center: readonly number[] }[],
+  batches: readonly { atlas: number; bounds: AABB }[],
   x: number,
   z: number,
 ): Demand[] {
   const nearest = new Map<number, number>()
-  for (const { atlas, center } of batches) {
-    const distance = Math.hypot((center[0] ?? 0) - x, (center[2] ?? 0) - z)
+  for (const { atlas, bounds } of batches) {
+    const distance = distanceToBounds(bounds, x, z)
     nearest.set(atlas, Math.min(nearest.get(atlas) ?? Number.POSITIVE_INFINITY, distance))
   }
   return [...nearest]

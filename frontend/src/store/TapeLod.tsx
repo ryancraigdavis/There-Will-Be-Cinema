@@ -15,10 +15,9 @@ import {
   STILL_METRES,
   usableLevels,
 } from './lod'
+import type { Quality } from './quality'
 import { type Budget, nearestPerSheet, planFull } from './residency'
 import { bindAtlas, tapeBatches } from './tapeRegistry'
-
-const FULL_SHEETS = 2
 
 interface Levels {
   warm: number | null
@@ -77,10 +76,16 @@ interface TickContext {
   budget: Budget
 }
 
-function budgetFor(index: AtlasIndex, levels: Levels, viewportPx: number, fov: number): Budget {
+function budgetFor(
+  index: AtlasIndex,
+  levels: Levels,
+  viewportPx: number,
+  fov: number,
+  fullSheets: number,
+): Budget {
   const cellPx = coverPixels(index, levels.warm ?? levels.full ?? index.size)
   return {
-    fullSheets: FULL_SHEETS,
+    fullSheets,
     fullDistance: fullDistance(viewportPx, fov, cellPx),
     hold: HOLD_FULL,
   }
@@ -127,8 +132,8 @@ function startLoad({ index, full, held }: TickContext, sheet: number) {
   )
 }
 
-export function TapeLod({ index, maxSize }: { index: AtlasIndex | null; maxSize: number }) {
-  const levels = useLevels(index, maxSize)
+export function TapeLod({ index, quality }: { index: AtlasIndex | null; quality: Quality }) {
+  const levels = useLevels(index, quality.maxAtlasSize)
   const warm = useWarmSheets(index, levels.warm)
   const held = useRef<Held>({ sheets: new Map(), loading: null })
   const frame = useRef(0)
@@ -145,7 +150,13 @@ export function TapeLod({ index, maxSize }: { index: AtlasIndex | null; maxSize:
     const settled = camera.position.distanceTo(last.current) < STILL_METRES
     last.current.copy(camera.position)
     if (index && levels.full) {
-      const budget = budgetFor(index, levels, size.height * dpr, perspective.fov)
+      const budget = budgetFor(
+        index,
+        levels,
+        size.height * dpr,
+        perspective.fov,
+        quality.fullSheets,
+      )
       upgradeTick({ index, full: levels.full, held: held.current, budget }, perspective, settled)
     }
     bindAll(held.current.sheets, warm)
