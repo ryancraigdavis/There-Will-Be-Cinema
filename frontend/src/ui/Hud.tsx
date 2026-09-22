@@ -68,9 +68,14 @@ function LobbyMenu() {
   )
 }
 
+function HoverLabel() {
+  const hoverLabel = useScene((state) => state.hoverLabel)
+  const paused = useScene((state) => state.paused)
+  return hoverLabel && !paused ? <p className="hud__label">{hoverLabel}</p> : null
+}
+
 export function Hud({ site }: { site: SiteInfo | null }) {
   const mode = useScene((state) => state.mode)
-  const hoverLabel = useScene((state) => state.hoverLabel)
   const locked = useScene((state) => state.locked)
   const selected = useScene((state) => state.selected)
   const paused = useScene((state) => state.paused)
@@ -82,7 +87,7 @@ export function Hud({ site }: { site: SiteInfo | null }) {
       {mode === 'free' && locked && !paused && (
         <div className="hud__crosshair" aria-hidden="true" />
       )}
-      {hoverLabel && !paused && <p className="hud__label">{hoverLabel}</p>}
+      <HoverLabel />
       {inLobby && <LobbyMenu />}
       {hint && !paused && <p className="hud__hint">{hint}</p>}
     </div>

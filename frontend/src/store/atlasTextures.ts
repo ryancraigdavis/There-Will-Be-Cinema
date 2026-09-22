@@ -5,8 +5,8 @@ import type { AtlasIndex } from '../catalog/types'
 import { levelKey, textureMb, urlLabel } from '../perf/mode'
 import { perf } from '../perf/perf'
 import { decodeInWorker } from './decoder'
-import { bitmapsSupported } from './textureSupport'
-import { cancelUpload, type Priority, queueBanded, queueUpload } from './textureUploads'
+import { workerDecodeSupported } from './textureSupport'
+import { cancelUpload, type Priority, queueDecoded, queueUpload } from './textureUploads'
 
 interface Entry {
   promise: Promise<Texture>
@@ -26,11 +26,10 @@ const entries = new Map<string, Entry>()
 const imageLoader = new TextureLoader()
 
 function decodesOffThread(): boolean {
-  return (
-    typeof navigator !== 'undefined' &&
-    typeof Worker !== 'undefined' &&
-    bitmapsSupported(navigator.userAgent, typeof createImageBitmap === 'function')
-  )
+  return workerDecodeSupported({
+    worker: typeof Worker !== 'undefined',
+    wasm: typeof WebAssembly !== 'undefined',
+  })
 }
 
 async function mainThreadTexture(url: string, options: { label: string; priority: Priority }) {
@@ -44,7 +43,7 @@ async function mainThreadTexture(url: string, options: { label: string; priority
 function load(url: string, priority: Priority, signal: AbortSignal): Promise<Texture> {
   const options = { label: urlLabel(url), priority, anisotropy: ANISOTROPY }
   return decodesOffThread()
-    ? decodeInWorker(url, signal).then((decoded) => queueBanded(decoded, options))
+    ? decodeInWorker(url, signal).then((decoded) => queueDecoded(decoded, options))
     : mainThreadTexture(url, options)
 }
 

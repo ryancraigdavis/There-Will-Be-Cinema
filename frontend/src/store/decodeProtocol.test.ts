@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { bandBytes, bandRects, isCancel, mipChain } from './decodeProtocol'
+import {
+  bandBytes,
+  bandRects,
+  flippedY,
+  flipRows,
+  isCancel,
+  mipChain,
+  pixelBands,
+} from './decodeProtocol'
 
 describe('decode protocol', () => {
   it.each([
@@ -30,6 +38,46 @@ describe('decode protocol', () => {
     expect(chain).toHaveLength(levels)
     expect(chain[0]).toEqual({ width, height })
     expect(chain.at(-1)).toEqual({ width: 1, height: 1 })
+  })
+
+  it('reverses the rows of a band', () => {
+    const rows = [
+      [1, 1, 1, 1, 2, 2, 2, 2],
+      [3, 3, 3, 3, 4, 4, 4, 4],
+      [5, 5, 5, 5, 6, 6, 6, 6],
+    ]
+    const flipped = flipRows(new Uint8ClampedArray(rows.flat()), 2)
+    expect([...flipped]).toEqual([...(rows[2] ?? []), ...(rows[1] ?? []), ...(rows[0] ?? [])])
+  })
+
+  it.each([
+    ['the top band lands at the bottom', 4096, { y: 0, height: 512 }, 3584],
+    ['the bottom band lands at the top', 4096, { y: 3584, height: 512 }, 0],
+    ['a short last band', 2100, { y: 2048, height: 52 }, 0],
+    ['a whole image', 600, { y: 0, height: 600 }, 0],
+  ])('%s', (_name, height, band, expected) => {
+    expect(flippedY(height, band)).toBe(expected)
+  })
+
+  it('cuts a tall image into flipped bands and keeps a short one whole', () => {
+    const width = 1
+    const tall = new Uint8Array(4 * 2048).map((_, i) => Math.floor(i / 4) % 256)
+    const bands = pixelBands(tall, width, 2048)
+    expect(bands.map((band) => [band.y, band.height])).toEqual([
+      [0, 512],
+      [512, 512],
+      [1024, 512],
+      [1536, 512],
+    ])
+    expect(bands[0]?.data[0]).toBe(511 % 256)
+    expect(bands[0]?.data.at(-4)).toBe(0)
+    const short = pixelBands(
+      new Uint8Array(4 * 3).map((_, i) => Math.floor(i / 4)),
+      width,
+      3,
+    )
+    expect(short).toHaveLength(1)
+    expect([...(short[0]?.data ?? [])].filter((_, i) => i % 4 === 0)).toEqual([2, 1, 0])
   })
 
   it('tells a cancel from a request', () => {

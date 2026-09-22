@@ -1,11 +1,11 @@
 import { urlLabel } from '../perf/mode'
 import { perf } from '../perf/perf'
-import type { CancelRequest, DecodeReply, DecodeRequest } from './decodeProtocol'
+import type { CancelRequest, DecodeReply, DecodeRequest, PixelBand } from './decodeProtocol'
 
 export interface Decoded {
   width: number
   height: number
-  bands: ImageBitmap[]
+  bands: PixelBand[]
 }
 
 interface Waiting {
@@ -23,9 +23,6 @@ function settle({ id, width, height, bands, error }: DecodeReply) {
   const job = waiting.get(id)
   waiting.delete(id)
   if (!job) {
-    for (const band of bands) {
-      band.close()
-    }
     return
   }
   perf.event(

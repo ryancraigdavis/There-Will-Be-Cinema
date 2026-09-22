@@ -21,6 +21,7 @@ export const METRICS: readonly Metric[] = [
   { header: 'draws', value: peak('draws') },
   { header: 'rays/f', value: perFrame('raycast.passes'), digits: 2 },
   { header: 'tests/f', value: perFrame('raycast.tests'), digits: 0 },
+  { header: 'pick/f', value: perFrame('pick.passes'), digits: 2 },
   { header: 'upl', value: total('upload.steps') },
   { header: 'upl4k-mv', value: total('upload.4096.moving') },
   { header: 'subImg', value: total('gl.texSubImage2D') },

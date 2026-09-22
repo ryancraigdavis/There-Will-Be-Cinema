@@ -1,26 +1,28 @@
-import type { InstancedMesh, Texture } from 'three'
+import type { Texture } from 'three'
 import type { Vec3 } from '../scene/math'
 
 export interface TapeUniforms {
   uAtlas: { value: Texture | null }
   uHasAtlas: { value: number }
+  uHover: { value: number }
+  uHidden: { value: number }
 }
 
 export interface TapeBatch {
+  key: string
   atlas: number
   center: Vec3
   uniforms: TapeUniforms
-  mesh: InstancedMesh | null
 }
 
-const batches = new Set<TapeBatch>()
+const batches = new Map<string, TapeBatch>()
 
 export function registerBatch(batch: TapeBatch): () => void {
-  batches.add(batch)
-  return () => batches.delete(batch)
+  batches.set(batch.key, batch)
+  return () => batches.delete(batch.key)
 }
 
-export function tapeBatches(): ReadonlySet<TapeBatch> {
+export function tapeBatches(): ReadonlyMap<string, TapeBatch> {
   return batches
 }
 
@@ -29,4 +31,11 @@ export function bindAtlas(batch: TapeBatch, texture: Texture | null): boolean {
   batch.uniforms.uAtlas.value = texture
   batch.uniforms.uHasAtlas.value = texture ? 1 : 0
   return changed
+}
+
+export function setUniform(key: string, name: 'uHover' | 'uHidden', value: number): void {
+  const batch = batches.get(key)
+  if (batch) {
+    batch.uniforms[name].value = value
+  }
 }

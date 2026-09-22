@@ -9,6 +9,7 @@ attribute vec3 aSpine;
 uniform vec2 uCellSize;
 uniform float uSpineRatio;
 uniform float uHover;
+uniform float uHidden;
 uniform vec3 uPull;
 varying vec2 vAtlasUv;
 varying float vTextured;
@@ -25,10 +26,11 @@ vAtlasUv = aCell.xy + (faceUv * 0.98 + 0.01) * uCellSize;
 vTextured = max(isCover, isSpine) * aCell.z;
 vSpine = aSpine;
 vHover = 1.0 - step(0.5, abs(float(gl_InstanceID) - uHover));
+float hidden = 1.0 - step(0.5, abs(float(gl_InstanceID) - uHidden));
 `
 
 const VERTEX_PULL = /* glsl */ `#include <begin_vertex>
-transformed += uPull * vHover;
+transformed = (transformed + uPull * vHover) * (1.0 - hidden);
 `
 
 const FRAGMENT_HEAD = /* glsl */ `#include <common>
@@ -56,6 +58,7 @@ export interface BoxUniforms {
   uCellSize: { value: Vector2 }
   uSpineRatio: { value: number }
   uHover: { value: number }
+  uHidden: { value: number }
   uPull: { value: Vector3 }
 }
 
@@ -69,6 +72,7 @@ export function createBoxMaterial(cell: [number, number]): {
     uCellSize: { value: new Vector2(cell[0], cell[1]) },
     uSpineRatio: { value: BOX.spine / BOX.cover },
     uHover: { value: -1 },
+    uHidden: { value: -1 },
     uPull: { value: new Vector3(PULL_OUT, 0, 0) },
   }
   const material = new MeshLambertMaterial({ color: '#ffffff' })

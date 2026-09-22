@@ -51,3 +51,14 @@ export function lookDirection(pose: Pose): Vec3 {
   const cos = Math.cos(pose.pitch)
   return [-Math.sin(pose.yaw) * cos, Math.sin(pose.pitch), -Math.cos(pose.yaw) * cos]
 }
+
+export function samePose(a: Pose, b: Pose): boolean {
+  return (
+    a === b ||
+    (a.yaw === b.yaw &&
+      a.pitch === b.pitch &&
+      a.position[0] === b.position[0] &&
+      a.position[1] === b.position[1] &&
+      a.position[2] === b.position[2])
+  )
+}

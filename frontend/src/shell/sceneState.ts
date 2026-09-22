@@ -41,7 +41,8 @@ export const useScene = create<SceneState>((set) => ({
       const unchanged = mode === state.mode
       return unchanged ? state : { mode, hoverLabel: null, selected: null, paused: false }
     }),
-  setHover: (hoverLabel) => set({ hoverLabel }),
+  setHover: (hoverLabel) =>
+    set((state) => (state.hoverLabel === hoverLabel ? state : { hoverLabel })),
   select: (selected) => set({ selected, hoverLabel: null }),
   setLocked: (locked) => set({ locked }),
   setPaused: (paused) => set({ paused }),

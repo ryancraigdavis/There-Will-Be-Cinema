@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
-import { InstancedMesh, type PerspectiveCamera, type Texture, Vector3 } from 'three'
+import { type PerspectiveCamera, type Texture, Vector3 } from 'three'
 import type { AtlasIndex } from '../catalog/types'
 import { perf } from '../perf/perf'
 import { warmLevel } from '../shell/warmup'
@@ -12,15 +12,13 @@ import {
   fullLevel,
   HOLD_FULL,
   LOD_INTERVAL_FRAMES,
-  PICK_DISTANCE,
   STILL_METRES,
   usableLevels,
 } from './lod'
 import { type Budget, nearestPerSheet, planFull } from './residency'
-import { bindAtlas, type TapeBatch, tapeBatches } from './tapeRegistry'
+import { bindAtlas, tapeBatches } from './tapeRegistry'
 
 const FULL_SHEETS = 2
-const noRaycast = () => undefined
 
 interface Levels {
   warm: number | null
@@ -63,16 +61,9 @@ function useWarmSheets(index: AtlasIndex | null, warm: number | null): Map<numbe
   return sheets
 }
 
-function applyPicking(batch: TapeBatch, camera: PerspectiveCamera, scratch: Vector3) {
-  const distance = camera.position.distanceTo(scratch.set(...batch.center))
-  if (batch.mesh) {
-    batch.mesh.raycast = distance <= PICK_DISTANCE ? InstancedMesh.prototype.raycast : noRaycast
-  }
-}
-
 function bindAll(full: Map<number, Texture>, warm: Map<number, Texture>) {
   let changes = 0
-  for (const batch of tapeBatches()) {
+  for (const batch of tapeBatches().values()) {
     const texture = full.get(batch.atlas) ?? warm.get(batch.atlas) ?? null
     changes += bindAtlas(batch, texture) ? 1 : 0
   }
@@ -97,7 +88,7 @@ function budgetFor(index: AtlasIndex, levels: Levels, viewportPx: number, fov: n
 
 function upgradeTick(context: TickContext, camera: PerspectiveCamera, settled: boolean) {
   const { held, budget } = context
-  const demands = nearestPerSheet([...tapeBatches()], camera.position.x, camera.position.z)
+  const demands = nearestPerSheet([...tapeBatches().values()], camera.position.x, camera.position.z)
   const state = { resident: [...held.sheets.keys()], loading: held.loading }
   applyPlan(context, planFull(demands, state, settled, budget))
   perf.gauge('lod.full', held.sheets.size + (held.loading === null ? 0 : 1))
@@ -142,7 +133,6 @@ export function TapeLod({ index, maxSize }: { index: AtlasIndex | null; maxSize:
   const held = useRef<Held>({ sheets: new Map(), loading: null })
   const frame = useRef(0)
   const last = useRef(new Vector3(Number.POSITIVE_INFINITY, 0, 0))
-  const scratch = useMemo(() => new Vector3(), [])
   const size = useThree((state) => state.size)
   const dpr = useThree((state) => state.viewport.dpr)
 
@@ -154,9 +144,6 @@ export function TapeLod({ index, maxSize }: { index: AtlasIndex | null; maxSize:
     const perspective = camera as PerspectiveCamera
     const settled = camera.position.distanceTo(last.current) < STILL_METRES
     last.current.copy(camera.position)
-    for (const batch of tapeBatches()) {
-      applyPicking(batch, perspective, scratch)
-    }
     if (index && levels.full) {
       const budget = budgetFor(index, levels, size.height * dpr, perspective.fov)
       upgradeTick({ index, full: levels.full, held: held.current, budget }, perspective, settled)

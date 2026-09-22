@@ -6,7 +6,7 @@ import {
   bandTarget,
   cancelUpload,
   pendingUploads,
-  queueBanded,
+  queueDecoded,
   queueUpload,
   type Uploader,
   uploadStep,
@@ -18,25 +18,24 @@ function recorder() {
     initTexture: (texture) => calls.push(`init ${texture.name || 'target'}`),
     copyTextureToTexture: (source, target, _region, position) =>
       calls.push(
-        `copy ${(source.image as ImageBitmap).height} rows to ${position?.y} mips=${target.generateMipmaps}`,
+        `copy ${(source.image as { height: number }).height} rows to ${position?.y} mips=${target.generateMipmaps}`,
       ),
   }
   return { calls, uploader }
 }
 
-function bitmap(height: number, width = 64): ImageBitmap {
-  let open = true
-  return {
-    width,
-    height,
-    close: () => {
-      open = false
-    },
-    get closed() {
-      return !open
-    },
-  } as unknown as ImageBitmap
-}
+const band = (y: number, height: number, width = 64) => ({
+  y,
+  height,
+  data: new Uint8Array(width * height * 4),
+})
+const sheet = (height: number, rows: number) => ({
+  width: 64,
+  height,
+  bands: Array.from({ length: Math.ceil(height / rows) }, (_, i) =>
+    band(i * rows, Math.min(rows, height - i * rows)),
+  ),
+})
 
 const drain = (uploader: Uploader) => {
   while (uploadStep(uploader)) {
@@ -62,13 +61,7 @@ describe('upload queue', () => {
 
   it('serves warm jobs before upgrades and holds upgrades while the camera moves', async () => {
     const { calls, uploader } = recorder()
-    const sharp = queueBanded(
-      { width: 64, height: 2048, bands: [bitmap(1024), bitmap(1024)] },
-      {
-        label: 'sharp',
-        priority: 'upgrade',
-      },
-    )
+    const sharp = queueDecoded(sheet(2048, 1024), { label: 'sharp', priority: 'upgrade' })
     const warm = queueUpload(Object.assign(new Texture(), { name: 'warm' }), { priority: 'warm' })
     expect(uploadStep(uploader, true)).toBe(true)
     expect(calls).toEqual(['init warm'])
@@ -80,15 +73,22 @@ describe('upload queue', () => {
     expect(await sharp).toBeInstanceOf(DataTexture)
   })
 
-  it('cancels a queued job by label, closing its bitmaps', async () => {
+  it('cancels a queued job by label', async () => {
     const { uploader } = recorder()
-    const bands = [bitmap(1024), bitmap(1024)]
-    const promise = queueBanded({ width: 64, height: 2048, bands }, { label: '3.webp' })
+    const promise = queueDecoded(sheet(2048, 1024), { label: '3.webp' })
     expect(cancelUpload('3.webp')).toBe(true)
     expect(cancelUpload('3.webp')).toBe(false)
     await expect(promise).rejects.toThrow('cancelled')
-    expect(bands.every((band) => (band as unknown as { closed: boolean }).closed)).toBe(true)
     expect(uploadStep(uploader)).toBe(false)
+  })
+
+  it('uploads a short image as one band', async () => {
+    const { calls, uploader } = recorder()
+    const poster = { width: 400, height: 600, bands: [band(0, 600, 400)] }
+    const ready = queueDecoded(poster, { label: 'poster' })
+    drain(uploader)
+    expect(calls).toEqual(['init target', 'copy 600 rows to 0 mips=true'])
+    expect(await ready).toBeInstanceOf(DataTexture)
   })
 })
 
@@ -101,20 +101,19 @@ describe('banded uploads', () => {
     expect(bandOffsets(height)).toEqual(expected)
   })
 
-  it('allocates once, copies each band in place, closes it, and builds mipmaps only on the last', () => {
+  it('allocates once, places each band flipped, and builds mipmaps only on the last', () => {
     const { calls, uploader } = recorder()
-    const bands = [bitmap(512), bitmap(512), bitmap(512), bitmap(512)]
-    for (const step of bandedSteps(bands, bandTarget(64, 2048, 8))) {
+    const steps = bandedSteps(sheet(2048, 512).bands, bandTarget(64, 2048, 8), 64, 2048)
+    for (const step of steps) {
       step(uploader)
     }
     expect(calls).toEqual([
       'init target',
-      'copy 512 rows to 0 mips=false',
-      'copy 512 rows to 512 mips=false',
+      'copy 512 rows to 1536 mips=false',
       'copy 512 rows to 1024 mips=false',
-      'copy 512 rows to 1536 mips=true',
+      'copy 512 rows to 512 mips=false',
+      'copy 512 rows to 0 mips=true',
     ])
-    expect(bands.every((band) => (band as unknown as { closed: boolean }).closed)).toBe(true)
   })
 
   it('reserves the whole mip chain up front without generating it', () => {

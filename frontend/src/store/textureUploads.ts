@@ -3,12 +3,12 @@ import {
   LinearFilter,
   LinearMipmapLinearFilter,
   SRGBColorSpace,
-  Texture,
+  type Texture,
   Vector2,
 } from 'three'
 import { levelKey } from '../perf/mode'
 import { PERF_MODE, perf, timed } from '../perf/perf'
-import { bandBytes, bandRects, mipChain } from './decodeProtocol'
+import { bandBytes, bandRects, flippedY, mipChain, type PixelBand } from './decodeProtocol'
 import type { Decoded } from './decoder'
 
 export { BAND_ROWS, BANDED_FROM } from './decodeProtocol'
@@ -64,24 +64,28 @@ export function bandOffsets(height: number, rows?: number): number[] {
   return bandRects(1, height, rows).map((band) => band.y)
 }
 
-function bandTexture(band: ImageBitmap): Texture {
-  const texture = new Texture(band)
+function bandTexture(band: PixelBand, width: number): Texture {
+  const texture = new DataTexture(band.data, width, band.height)
   texture.flipY = false
   texture.colorSpace = SRGBColorSpace
   return texture
 }
 
-export function bandedSteps(bands: readonly ImageBitmap[], target: Texture): Step[] {
+export function bandedSteps(
+  bands: readonly PixelBand[],
+  target: Texture,
+  width: number,
+  height: number,
+): Step[] {
   const last = bands.length - 1
-  const offsets = bandOffsets(bands.reduce((sum, band) => sum + band.height, 0))
   return [
     (uploader) => uploader.initTexture(target),
     ...bands.map(
       (band, i): Step =>
         (uploader) => {
           target.generateMipmaps = i === last
-          uploader.copyTextureToTexture(bandTexture(band), target, null, new Vector2(0, offsets[i]))
-          band.close()
+          const at = new Vector2(0, flippedY(height, band))
+          uploader.copyTextureToTexture(bandTexture(band, width), target, null, at)
         },
     ),
   ]
@@ -141,20 +145,21 @@ export function queueUpload(texture: Texture, options: UploadOptions = {}): Prom
   })
 }
 
-export function queueBanded(decoded: Decoded, options: UploadOptions = {}): Promise<Texture> {
+export function queueDecoded(decoded: Decoded, options: UploadOptions = {}): Promise<Texture> {
   const { width, height, bands } = decoded
   const target = bandTarget(width, height, options.anisotropy ?? 8)
   return new Promise((resolve, reject) => {
     enqueue(
-      job(bandedSteps(bands, target), [0, ...bandBytes(width, height)], width, options, {
-        done: () => resolve(target),
-        drop: () => {
-          for (const band of bands) {
-            band.close()
-          }
-          reject(new Error('upload cancelled'))
+      job(
+        bandedSteps(bands, target, width, height),
+        [0, ...bandBytes(width, height)],
+        width,
+        options,
+        {
+          done: () => resolve(target),
+          drop: () => reject(new Error('upload cancelled')),
         },
-      }),
+      ),
     )
   })
 }

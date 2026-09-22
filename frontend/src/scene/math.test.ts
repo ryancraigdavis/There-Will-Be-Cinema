@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { forwardXZ, lerpAngle, lookDirection, poseLookingAt, rightXZ, wrapAngle } from './math'
+import {
+  forwardXZ,
+  lerpAngle,
+  lookDirection,
+  poseLookingAt,
+  rightXZ,
+  samePose,
+  wrapAngle,
+} from './math'
 
 describe('angles', () => {
   it.each([
@@ -42,5 +50,18 @@ describe('poses', () => {
     const [rx, rz] = rightXZ(0.7)
     expect(fx * rx + fz * rz).toBeCloseTo(0)
     expect(rightXZ(0)).toEqual([1, -0])
+  })
+})
+
+describe('samePose', () => {
+  const pose = { position: [1, 2, 3] as const, yaw: 0.5, pitch: -0.1 }
+  it.each([
+    ['the same object', pose, true],
+    ['an equal copy', { ...pose, position: [1, 2, 3] as const }, true],
+    ['a turn', { ...pose, yaw: 0.6 }, false],
+    ['a tilt', { ...pose, pitch: 0 }, false],
+    ['a step', { ...pose, position: [1, 2, 3.1] as const }, false],
+  ])('%s', (_name, other, expected) => {
+    expect(samePose(pose, other)).toBe(expected)
   })
 })

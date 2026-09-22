@@ -1,10 +1,11 @@
+import wasmUrl from '@jsquash/webp/codec/dec/webp_dec.wasm?url'
+import decodeWebp, { init } from '@jsquash/webp/decode'
 import {
-  bandRects,
   type CancelRequest,
-  DECODE_OPTIONS,
   type DecodeReply,
   type DecodeRequest,
   isCancel,
+  pixelBands,
 } from './decodeProtocol'
 
 interface Scope {
@@ -14,26 +15,14 @@ interface Scope {
 
 const scope = self as unknown as Scope
 const pending = new Map<number, AbortController>()
-
-async function cropBands(full: ImageBitmap): Promise<ImageBitmap[]> {
-  const rects = bandRects(full.width, full.height)
-  const whole = rects.length === 1
-  const bands = whole
-    ? [full]
-    : await Promise.all(
-        rects.map((band) => createImageBitmap(full, 0, band.y, full.width, band.height)),
-      )
-  if (!whole) {
-    full.close()
-  }
-  return bands
-}
+const ready = init({ locateFile: () => wasmUrl })
 
 async function decode({ id, url }: DecodeRequest, signal: AbortSignal): Promise<DecodeReply> {
   const response = await fetch(url, { signal })
-  const full = await createImageBitmap(await response.blob(), DECODE_OPTIONS)
-  const { width, height } = full
-  return { id, width, height, bands: await cropBands(full) }
+  const bytes = await response.arrayBuffer()
+  await ready
+  const { width, height, data } = await decodeWebp(bytes)
+  return { id, width, height, bands: pixelBands(data, width, height) }
 }
 
 function failure(id: number, error: unknown): DecodeReply {
@@ -47,7 +36,10 @@ async function handle(request: DecodeRequest) {
     failure(request.id, error),
   )
   pending.delete(request.id)
-  scope.postMessage(reply, reply.bands)
+  scope.postMessage(
+    reply,
+    reply.bands.map((band) => band.data.buffer),
+  )
 }
 
 scope.onmessage = ({ data }) => {

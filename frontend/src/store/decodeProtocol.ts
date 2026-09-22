@@ -1,15 +1,13 @@
 export const BAND_ROWS = 512
 export const BANDED_FROM = 2048
 
-export const DECODE_OPTIONS: ImageBitmapOptions = {
-  imageOrientation: 'flipY',
-  premultiplyAlpha: 'none',
-  colorSpaceConversion: 'none',
-}
-
 export interface BandRect {
   y: number
   height: number
+}
+
+export interface PixelBand extends BandRect {
+  data: Uint8Array
 }
 
 export interface DecodeRequest {
@@ -26,7 +24,7 @@ export interface DecodeReply {
   id: number
   width: number
   height: number
-  bands: ImageBitmap[]
+  bands: PixelBand[]
   error?: string
 }
 
@@ -41,6 +39,32 @@ export function bandRects(width: number, height: number, rows = BAND_ROWS): Band
 
 export function bandBytes(width: number, height: number): number[] {
   return bandRects(width, height).map((band) => width * band.height * 4)
+}
+
+export function flipRows(pixels: Uint8ClampedArray | Uint8Array, width: number): Uint8Array {
+  const stride = width * 4
+  const rows = pixels.length / stride
+  const flipped = new Uint8Array(pixels.length)
+  for (let row = 0; row < rows; row++) {
+    flipped.set(pixels.subarray(row * stride, (row + 1) * stride), (rows - 1 - row) * stride)
+  }
+  return flipped
+}
+
+export function pixelBands(
+  pixels: Uint8ClampedArray | Uint8Array,
+  width: number,
+  height: number,
+): PixelBand[] {
+  const stride = width * 4
+  return bandRects(width, height).map((band) => ({
+    ...band,
+    data: flipRows(pixels.subarray(band.y * stride, (band.y + band.height) * stride), width),
+  }))
+}
+
+export function flippedY(height: number, band: BandRect): number {
+  return height - band.y - band.height
 }
 
 export function mipChain(width: number, height: number): { width: number; height: number }[] {

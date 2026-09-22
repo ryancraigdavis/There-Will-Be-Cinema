@@ -1,8 +1,6 @@
-import type { ThreeEvent } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import {
   BoxGeometry,
-  BufferGeometry,
   Color,
   InstancedBufferAttribute,
   type InstancedMesh,
@@ -14,12 +12,12 @@ import {
 import type { AtlasIndex, Catalog } from '../catalog/types'
 import { perf } from '../perf/perf'
 import type { Vec3 } from '../scene/math'
-import { useScene } from '../shell/sceneState'
 import { spineColor } from '../theme/palette'
 import { cellOrigin, cellSize, groupSlotsByAtlas } from './batches'
 import { createBoxMaterial } from './boxMaterial'
 import { BOX } from './constants'
 import type { Slot } from './geometry'
+import { batchKey } from './pick'
 import { registerBatch } from './tapeRegistry'
 
 export interface ShelfGroup {
@@ -29,15 +27,15 @@ export interface ShelfGroup {
 }
 
 const BASE = new BoxGeometry(BOX.spine, BOX.height, BOX.cover)
-const CLICK_SLOP_PX = 4
 const UP = new Vector3(0, 1, 0)
+const noRaycast = () => undefined
+const position = new Vector3()
+const rotation = new Quaternion()
+const matrix = new Matrix4()
+const ONE = new Vector3(1, 1, 1)
 
 function batchGeometry(slots: readonly Slot[], catalog: Catalog, index: AtlasIndex | null) {
-  const geometry = new BufferGeometry()
-  geometry.setIndex(BASE.index)
-  for (const name of ['position', 'normal', 'uv']) {
-    geometry.setAttribute(name, BASE.getAttribute(name))
-  }
+  const geometry = BASE.clone()
   const cells = new Float32Array(slots.length * 3)
   const spines = new Float32Array(slots.length * 3)
   const color = new Color()
@@ -52,23 +50,14 @@ function batchGeometry(slots: readonly Slot[], catalog: Catalog, index: AtlasInd
   return geometry
 }
 
-function slotMatrix(slot: Slot, scale: number): Matrix4 {
-  const position = new Vector3(slot.position[0], slot.position[1], slot.position[2])
-  const rotation = new Quaternion().setFromAxisAngle(UP, slot.yaw)
-  return new Matrix4().compose(position, rotation, new Vector3(scale, scale, scale))
-}
-
-function browsing(): boolean {
-  const scene = useScene.getState()
-  return scene.mode === 'free' && !scene.paused && !scene.selected
-}
-
-function hoverLabel(catalog: Catalog, itemId: string | undefined): string | null {
-  const item = catalog.byId.get(itemId ?? '')
-  return item ? [item.title, item.year].filter(Boolean).join(' · ') : null
+function slotMatrix(slot: Slot): Matrix4 {
+  position.set(slot.position[0], slot.position[1], slot.position[2])
+  rotation.setFromAxisAngle(UP, slot.yaw)
+  return matrix.compose(position, rotation, ONE)
 }
 
 interface BatchProps {
+  id: string
   slots: Slot[]
   atlas: number
   index: AtlasIndex | null
@@ -76,17 +65,15 @@ interface BatchProps {
   center: Vec3
 }
 
-function BoxBatch({ slots, atlas, index, catalog, center }: BatchProps) {
+function BoxBatch({ id, slots, atlas, index, catalog, center }: BatchProps) {
   const mesh = useRef<InstancedMesh>(null)
-  const hovered = useRef(-1)
-  const selected = useScene((state) => state.selected)
   const { material, uniforms } = useMemo(() => createBoxMaterial(cellSize(index)), [index])
   const geometry = useMemo(() => batchGeometry(slots, catalog, index), [slots, catalog, index])
   perf.count('render.BoxBatch')
 
   useEffect(
-    () => registerBatch({ atlas, center, uniforms, mesh: mesh.current }),
-    [atlas, center, uniforms],
+    () => registerBatch({ key: batchKey(id, atlas), atlas, center, uniforms }),
+    [id, atlas, center, uniforms],
   )
 
   useEffect(
@@ -103,55 +90,20 @@ function BoxBatch({ slots, atlas, index, catalog, center }: BatchProps) {
       return
     }
     slots.forEach((slot, i) => {
-      target.setMatrixAt(i, slotMatrix(slot, slot.itemId === selected ? 0 : 1))
+      target.setMatrixAt(i, slotMatrix(slot))
     })
     target.instanceMatrix.needsUpdate = true
     perf.count('matrix.rewrite', slots.length)
     target.computeBoundingBox()
     target.computeBoundingSphere()
-  }, [slots, selected])
-
-  const hoverIndex = (next: number) => {
-    hovered.current = next
-    uniforms.uHover.value = next
-    useScene.getState().setHover(hoverLabel(catalog, slots[next]?.itemId))
-  }
-
-  const move = (event: ThreeEvent<PointerEvent>) => {
-    if (!browsing()) {
-      return
-    }
-    event.stopPropagation()
-    const next = event.instanceId ?? -1
-    if (next !== hovered.current) {
-      hoverIndex(next)
-    }
-  }
-
-  const out = () => {
-    if (hovered.current !== -1) {
-      hoverIndex(-1)
-    }
-  }
-
-  const click = (event: ThreeEvent<MouseEvent>) => {
-    const slot = slots[event.instanceId ?? -1]
-    if (!slot || !browsing() || event.delta > CLICK_SLOP_PX) {
-      return
-    }
-    event.stopPropagation()
-    hoverIndex(-1)
-    useScene.getState().select(slot.itemId)
-  }
+  }, [slots])
 
   return (
     <instancedMesh
       ref={mesh}
       name="tapes"
       args={[geometry, material, slots.length]}
-      onPointerMove={move}
-      onPointerOut={out}
-      onClick={click}
+      raycast={noRaycast}
     />
   )
 }
@@ -167,6 +119,7 @@ export function ShelfBoxes({ group, catalog, index }: ShelfBoxesProps) {
   return batches.map((batch) => (
     <BoxBatch
       key={`${group.id}:${batch.atlas}`}
+      id={group.id}
       slots={batch.slots}
       atlas={batch.atlas}
       index={index}

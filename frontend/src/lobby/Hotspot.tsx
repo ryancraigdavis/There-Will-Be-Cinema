@@ -20,6 +20,7 @@ interface Props {
 
 const CLICK_SLOP_PX = 4
 const noRaycast = () => null
+const block = (event: ThreeEvent<PointerEvent>) => event.stopPropagation()
 
 export function Hotspot({ label, glow, active, onSelect, children }: Props) {
   const [hovered, setHovered] = useState(false)
@@ -55,7 +56,7 @@ export function Hotspot({ label, glow, active, onSelect, children }: Props) {
   }
 
   return (
-    <group onPointerOver={over} onPointerMove={over} onPointerOut={out} onClick={click}>
+    <group onPointerOver={over} onPointerMove={block} onPointerOut={out} onClick={click}>
       {children}
       <mesh
         visible={lit}

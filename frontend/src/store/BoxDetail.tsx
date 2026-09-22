@@ -8,8 +8,6 @@ import {
   type Mesh,
   MeshBasicMaterial,
   type Object3D,
-  Raycaster,
-  type Scene,
   type Texture,
   Vector3,
 } from 'three'
@@ -18,7 +16,8 @@ import { type BadgeKind, badgesFor } from '../catalog/badges'
 import { metaLine, truncate } from '../catalog/format'
 import type { Catalog, CatalogItem, SiteInfo } from '../catalog/types'
 import { runtimesDiffer, versionDetail, versionLabel } from '../catalog/versions'
-import { timed } from '../perf/perf'
+import type { AABB } from '../player/collision'
+import { rayClearance } from '../scene/clearance'
 import type { Vec3 } from '../scene/math'
 import { useScene } from '../shell/sceneState'
 import { FONTS } from '../theme/fonts'
@@ -54,22 +53,22 @@ interface Placement {
 }
 
 const stop = (event: ThreeEvent<MouseEvent | PointerEvent>) => event.stopPropagation()
-const raycaster = new Raycaster()
 
-function clearDistance(camera: Camera, scene: Scene, forward: Vector3): number {
-  raycaster.set(camera.position, forward)
-  raycaster.far = DISTANCE + CLEARANCE
-  const hits = timed('detail clear-space raycast', () =>
-    raycaster.intersectObjects(scene.children, true),
+function clearDistance(camera: Camera, colliders: readonly AABB[], forward: Vector3): number {
+  const origin = { x: camera.position.x, z: camera.position.z }
+  const nearest = rayClearance(
+    origin,
+    { x: forward.x, z: forward.z },
+    colliders,
+    DISTANCE + CLEARANCE,
   )
-  const nearest = hits[0]?.distance ?? Number.POSITIVE_INFINITY
   return Math.max(MIN_DISTANCE, Math.min(DISTANCE, nearest - CLEARANCE))
 }
 
-function placeInFront(camera: Camera, scene: Scene): Placement {
+function placeInFront(camera: Camera, colliders: readonly AABB[]): Placement {
   const yaw = camera.rotation.y
   const forward = new Vector3(-Math.sin(yaw), 0, -Math.cos(yaw))
-  const distance = clearDistance(camera, scene, forward)
+  const distance = clearDistance(camera, colliders, forward)
   return {
     position: [
       camera.position.x + forward.x * distance,
@@ -351,14 +350,19 @@ function DetailPanel({ film, versions, site, placement }: PanelProps) {
   )
 }
 
-export function BoxDetail({ catalog, site }: { catalog: Catalog; site: SiteInfo | null }) {
+interface DetailProps {
+  catalog: Catalog
+  site: SiteInfo | null
+  colliders: readonly AABB[]
+}
+
+export function BoxDetail({ catalog, site, colliders }: DetailProps) {
   const selected = useScene((state) => state.selected)
   const camera = useThree((state) => state.camera)
-  const scene = useThree((state) => state.scene)
   const film = selected ? catalog.byId.get(selected) : undefined
   const placement = useMemo(
-    () => (film ? placeInFront(camera, scene) : null),
-    [film, camera, scene],
+    () => (film ? placeInFront(camera, colliders) : null),
+    [film, camera, colliders],
   )
   return film && placement ? (
     <DetailPanel

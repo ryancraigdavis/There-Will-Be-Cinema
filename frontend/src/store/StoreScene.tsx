@@ -18,6 +18,7 @@ import { Shelving } from './Shelving'
 import { ShelfSigns } from './Signs'
 import { StoreFixtures } from './StoreFixtures'
 import { TapeLod } from './TapeLod'
+import { TapePicker } from './TapePicker'
 import { ShaderWarmup, TextureUploads, WarmAtlases } from './Warmup'
 
 const PHONE_ATLAS_SIZE = 2048
@@ -41,6 +42,24 @@ function useMaxAtlasSize(): number {
   }, [gl])
 }
 
+interface TapesProps {
+  catalog: Catalog
+  plan: StorePlan
+  index: AtlasIndex | null
+  groups: ShelfGroup[]
+}
+
+function Tapes({ catalog, plan, index, groups }: TapesProps) {
+  return (
+    <>
+      {groups.map((group) => (
+        <ShelfBoxes key={group.id} group={group} catalog={catalog} index={index} />
+      ))}
+      <TapePicker sections={plan.sections} index={index} catalog={catalog} />
+    </>
+  )
+}
+
 export function StoreScene({ catalog, plan, site, atlasIndex, atlasSettled, active }: Props) {
   const maxAtlasSize = useMaxAtlasSize()
   const colliders = useMemo(() => sceneColliders(plan), [plan])
@@ -62,13 +81,13 @@ export function StoreScene({ catalog, plan, site, atlasIndex, atlasSettled, acti
         <StoreFixtures site={site} />
         {plan && <ShelfSigns signs={plan.signs} />}
       </Suspense>
-      {catalog &&
-        atlasSettled &&
-        groups.map((group) => (
-          <ShelfBoxes key={group.id} group={group} catalog={catalog} index={atlasIndex} />
-        ))}
+      {catalog && plan && atlasSettled && (
+        <Tapes catalog={catalog} plan={plan} index={atlasIndex} groups={groups} />
+      )}
       <TapeLod index={atlasIndex} maxSize={maxAtlasSize} />
-      <Suspense fallback={null}>{catalog && <BoxDetail catalog={catalog} site={site} />}</Suspense>
+      <Suspense fallback={null}>
+        {catalog && <BoxDetail catalog={catalog} site={site} colliders={colliders} />}
+      </Suspense>
       <PlayerRig colliders={colliders} active={active} />
       <TextureUploads />
       <WarmAtlases index={atlasIndex} maxSize={maxAtlasSize} />

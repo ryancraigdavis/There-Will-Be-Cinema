@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import type { Camera, PerspectiveCamera } from 'three'
 import { ANCHORS, type AnchorId } from '../lobby/anchors'
 import { FIXED_STEP_MS } from '../perf/perf'
-import type { Pose } from '../scene/math'
+import { type Pose, samePose } from '../scene/math'
 import { useScene } from '../shell/sceneState'
 import {
   advance,
@@ -156,7 +156,7 @@ export function PlayerRig({ colliders, active }: Props) {
     }
     applyPose(camera, result.pose)
     easeFov(camera, fovFor(scene.mode, state.viewport.aspect), dt)
-    if (result.pose !== before && scene.mode !== 'intro') {
+    if (!samePose(before, result.pose) && scene.mode !== 'intro') {
       state.events.update?.()
     }
   })
