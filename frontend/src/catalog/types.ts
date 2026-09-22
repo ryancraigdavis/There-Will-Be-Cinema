@@ -110,5 +110,7 @@ export interface AtlasIndex {
   version: string
   count: number
   levels?: number[]
+  sheets?: string[]
   slots: Record<string, [number, number, number]>
+  display?: Record<string, [number, number, number]>
 }

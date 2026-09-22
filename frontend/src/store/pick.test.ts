@@ -11,6 +11,7 @@ const index: AtlasIndex = {
   version: 'v',
   count: 2,
   slots: { a: [0, 0, 0], b: [1, 0, 0], c: [0, 1, 0], twin: [0, 2, 0] },
+  display: { a: [5, 0, 0], b: [5, 1, 0] },
 }
 
 // A face-out row along x at z = -1, covers facing +z (yaw = -π/2), 12.5 cm apart.
@@ -71,6 +72,16 @@ describe('pickTape', () => {
       key: 's1:0',
       instance: 1,
     })
+  })
+})
+
+describe('display runs', () => {
+  it('batches an endcap by its display sheet', () => {
+    const [endcap] = buildPickIndex(
+      [{ id: 'e', slots: row('a', 'b'), run: { kind: 'endcap' } }],
+      index,
+    )
+    expect(endcap?.slots.map((slot) => slot.key)).toEqual(['e:5', 'e:5'])
   })
 })
 

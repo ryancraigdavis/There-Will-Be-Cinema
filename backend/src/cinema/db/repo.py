@@ -153,6 +153,15 @@ def poster_slots(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     ).fetchall()
 
 
+def newest_movies(conn: sqlite3.Connection, limit: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT i.id, p.image_tag FROM items i JOIN posters p ON p.item_id = i.id "
+        "AND p.image_tag = i.image_tag WHERE i.deleted=0 AND i.type='Movie' "
+        "ORDER BY i.date_created DESC, i.id LIMIT ?",
+        (limit,),
+    ).fetchall()
+
+
 def start_sync_run(conn: sqlite3.Connection, mode: str) -> int:
     with conn:
         cur = conn.execute(

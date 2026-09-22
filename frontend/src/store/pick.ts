@@ -1,8 +1,9 @@
 import type { AtlasIndex } from '../catalog/types'
 import type { Vec3 } from '../scene/math'
-import { groupSlotsByAtlas } from './batches'
+import { groupSlotsByAtlas, isDisplayRun } from './batches'
 import { BOX } from './constants'
 import type { Slot } from './geometry'
+import type { RunKind } from './runs'
 
 export interface Box3 {
   min: Vec3
@@ -46,13 +47,20 @@ function union(boxes: readonly Box3[]): Box3 {
   return { min: axis((box) => box.min, Math.min), max: axis((box) => box.max, Math.max) }
 }
 
+export interface PickSource {
+  id: string
+  slots: readonly Slot[]
+  run?: { kind: RunKind }
+}
+
 export function buildPickIndex(
-  sections: readonly { id: string; slots: readonly Slot[] }[],
+  sections: readonly PickSource[],
   index: AtlasIndex | null,
 ): PickSection[] {
   return sections
     .map((section) => {
-      const slots = groupSlotsByAtlas(section.slots, index).flatMap((batch) =>
+      const grouped = groupSlotsByAtlas(section.slots, index, isDisplayRun(section.run?.kind))
+      const slots = grouped.flatMap((batch) =>
         batch.slots.map((slot, instance) => ({
           ...slotBounds(slot),
           key: batchKey(section.id, batch.atlas),

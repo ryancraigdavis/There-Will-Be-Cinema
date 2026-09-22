@@ -24,6 +24,7 @@ export interface ShelfGroup {
   id: string
   slots: Slot[]
   center: Vec3
+  display: boolean
 }
 
 const BASE = new BoxGeometry(BOX.spine, BOX.height, BOX.cover)
@@ -34,7 +35,12 @@ const rotation = new Quaternion()
 const matrix = new Matrix4()
 const ONE = new Vector3(1, 1, 1)
 
-function batchGeometry(slots: readonly Slot[], catalog: Catalog, index: AtlasIndex | null) {
+function batchGeometry(
+  slots: readonly Slot[],
+  catalog: Catalog,
+  index: AtlasIndex | null,
+  display: boolean,
+) {
   const geometry = BASE.clone()
   const cells = new Float32Array(slots.length * 3)
   const spines = new Float32Array(slots.length * 3)
@@ -42,7 +48,7 @@ function batchGeometry(slots: readonly Slot[], catalog: Catalog, index: AtlasInd
   slots.forEach((slot, i) => {
     const [r, g, b] = spineColor(catalog.byId.get(slot.itemId)?.primaryGenre ?? '', slot.itemId)
     color.setRGB(r, g, b, SRGBColorSpace)
-    cells.set(cellOrigin(slot.itemId, index), i * 3)
+    cells.set(cellOrigin(slot.itemId, index, display), i * 3)
     spines.set([color.r, color.g, color.b], i * 3)
   })
   geometry.setAttribute('aCell', new InstancedBufferAttribute(cells, 3))
@@ -63,12 +69,16 @@ interface BatchProps {
   index: AtlasIndex | null
   catalog: Catalog
   center: Vec3
+  display: boolean
 }
 
-function BoxBatch({ id, slots, atlas, index, catalog, center }: BatchProps) {
+function BoxBatch({ id, slots, atlas, index, catalog, center, display }: BatchProps) {
   const mesh = useRef<InstancedMesh>(null)
   const { material, uniforms } = useMemo(() => createBoxMaterial(cellSize(index)), [index])
-  const geometry = useMemo(() => batchGeometry(slots, catalog, index), [slots, catalog, index])
+  const geometry = useMemo(
+    () => batchGeometry(slots, catalog, index, display),
+    [slots, catalog, index, display],
+  )
   perf.count('render.BoxBatch')
 
   useEffect(
@@ -115,7 +125,10 @@ interface ShelfBoxesProps {
 }
 
 export function ShelfBoxes({ group, catalog, index }: ShelfBoxesProps) {
-  const batches = useMemo(() => groupSlotsByAtlas(group.slots, index), [group.slots, index])
+  const batches = useMemo(
+    () => groupSlotsByAtlas(group.slots, index, group.display),
+    [group.slots, index, group.display],
+  )
   return batches.map((batch) => (
     <BoxBatch
       key={`${group.id}:${batch.atlas}`}
@@ -125,6 +138,7 @@ export function ShelfBoxes({ group, catalog, index }: ShelfBoxesProps) {
       index={index}
       catalog={catalog}
       center={group.center}
+      display={group.display}
     />
   ))
 }

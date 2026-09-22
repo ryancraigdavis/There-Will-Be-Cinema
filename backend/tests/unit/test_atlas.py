@@ -87,3 +87,35 @@ def test_levels_incomplete(data_dir, damage):
 
 def test_levels_incomplete_without_index(data_dir):
     assert atlas.levels_complete(data_dir) is False
+
+
+def test_display_sheet_follows_the_genre_sheets(data_dir):
+    thumbs = _two_thumbs(data_dir)
+    index = atlas.build_atlases(data_dir, thumbs, display=[("m2", "t2"), ("m1", "t1")])
+    assert index["count"] == 2
+    assert index["slots"] == {"m1": [0, 0, 0], "m2": [0, 1, 0]}
+    assert index["display"] == {"m2": [1, 0, 0], "m1": [1, 1, 0]}
+    assert len(index["sheets"]) == 2
+    assert index["version"] != atlas.build_index(thumbs)["version"]
+    assert atlas.sheet_complete(data_dir, 1) is True
+    assert atlas.levels_complete(data_dir) is True
+
+
+def test_unchanged_sheets_are_not_rendered_again(data_dir, monkeypatch):
+    thumbs = _two_thumbs(data_dir)
+    atlas.build_atlases(data_dir, thumbs, display=[("m1", "t1")])
+    rendered = []
+    monkeypatch.setattr(atlas, "render_sheet", lambda _d, number, _c: rendered.append(number))
+    atlas.build_atlases(data_dir, thumbs, display=[("m1", "t1")])
+    assert rendered == []
+    atlas.build_atlases(data_dir, thumbs, display=[("m2", "t2")])
+    assert rendered == [1]
+    atlas.level_path(data_dir, 0, 1024).unlink()
+    atlas.build_atlases(data_dir, thumbs, display=[("m2", "t2")])
+    assert rendered == [1, 0]
+
+
+def test_index_without_display_is_still_legal():
+    index = atlas.build_index([("m1", "t1")])
+    assert index["display"] == {}
+    assert index["sheets"] == [index["version"]]

@@ -6,18 +6,20 @@ import type { AtlasIndex, Catalog } from '../catalog/types'
 import { perf } from '../perf/perf'
 import { useScene } from '../shell/sceneState'
 import { PICK_DISTANCE } from './lod'
-import { buildPickIndex, type PickSection, type PickSlot, pickTape, tapeLocations } from './pick'
+import {
+  buildPickIndex,
+  type PickSection,
+  type PickSlot,
+  type PickSource,
+  pickTape,
+  tapeLocations,
+} from './pick'
 import { setUniform } from './tapeRegistry'
 
 const CLICK_SLOP_PX = 4
 
 interface TapeHit extends Intersection {
   slot: PickSlot
-}
-
-interface Section {
-  id: string
-  slots: readonly { itemId: string; position: readonly [number, number, number]; yaw: number }[]
 }
 
 function browsing(): boolean {
@@ -72,7 +74,7 @@ function useHiddenTape(locations: Map<string, { key: string; instance: number }[
 }
 
 interface Props {
-  sections: readonly Section[]
+  sections: readonly PickSource[]
   index: AtlasIndex | null
   catalog: Catalog
 }

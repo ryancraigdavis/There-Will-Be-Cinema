@@ -144,5 +144,5 @@ export async function fetchAtlasIndex(): Promise<AtlasIndex> {
 
 export function atlasUrl(index: AtlasIndex, atlas: number, size = index.size): string {
   const suffix = size === index.size ? '' : `-${size}`
-  return `${API_BASE}/api/atlases/${atlas}${suffix}.webp?v=${index.version}`
+  return `${API_BASE}/api/atlases/${atlas}${suffix}.webp?v=${index.sheets?.[atlas] ?? index.version}`
 }

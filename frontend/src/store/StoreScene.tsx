@@ -10,6 +10,7 @@ import { Decor } from '../scene/Decor'
 import { Lights } from '../theme/Lights'
 import { Banners } from './Banners'
 import { BoxDetail } from './BoxDetail'
+import { isDisplayRun } from './batches'
 import { Dividers } from './Dividers'
 import type { StorePlan } from './layout'
 import { Room } from './Room'
@@ -64,7 +65,13 @@ export function StoreScene({ catalog, plan, site, atlasIndex, atlasSettled, acti
   const maxAtlasSize = useMaxAtlasSize()
   const colliders = useMemo(() => sceneColliders(plan), [plan])
   const groups = useMemo<ShelfGroup[]>(
-    () => (plan?.sections ?? []).map(({ id, slots, center }) => ({ id, slots, center })),
+    () =>
+      (plan?.sections ?? []).map(({ id, slots, center, run }) => ({
+        id,
+        slots,
+        center,
+        display: isDisplayRun(run.kind),
+      })),
     [plan],
   )
 

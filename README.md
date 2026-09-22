@@ -67,7 +67,11 @@ Set `API_PROXY_TARGET` to point the Vite dev proxy at a backend on another port.
   once. The panel picks the best copy and lists the others, and Watch on Emby opens the one
   you choose. `/?tape=<emby id>` opens the store with that tape already pulled out.
 
-Posters come from texture atlases at three sizes (1024, 2048, 4096). Shelves far away use the
+Posters come from texture atlases at three sizes (1024, 2048, 4096). Sheets are packed in
+genre order, plus one **display sheet** (the last one) holding the newest movies and the largest
+collections so New Releases and the endcaps draw from a single sheet; `index.json` lists genre
+`slots`, `display` slots and a content hash per sheet (`sheets`), so only changed sheets are
+re-rendered and re-downloaded. Shelves far away use the
 small sheet and sharpen as you get close; the full-size sheet only loads once you stop in front of a
 shelf, so nothing big uploads while you walk. Phones stop at 2048. The backend regenerates any
 missing size during its next sync.

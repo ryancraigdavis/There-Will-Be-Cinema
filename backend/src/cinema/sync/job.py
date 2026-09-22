@@ -9,7 +9,7 @@ from cinema.db import repo
 from cinema.db.connection import SCHEMA_VERSION
 from cinema.emby.client import EmbyClient
 from cinema.emby.parse import flatten_collection, flatten_item
-from cinema.sync import atlas, posters
+from cinema.sync import atlas, displays, posters
 
 log = structlog.get_logger()
 BATCH = 200
@@ -71,11 +71,17 @@ async def sync_posters(conn: sqlite3.Connection, client: EmbyClient, data_dir: P
     return len(fetched)
 
 
+def display_slots(conn: sqlite3.Connection, tags: dict[str, str]) -> list[atlas.Slot]:
+    newest = [(r["id"], r["image_tag"]) for r in repo.newest_movies(conn, displays.NEWEST)]
+    return displays.pick_display(newest, repo.list_collections(conn), tags, atlas.PER_ATLAS)
+
+
 async def rebuild_atlases(conn: sqlite3.Connection, data_dir: Path) -> str:
     slots = [(r["id"], r["image_tag"]) for r in repo.poster_slots(conn)]
-    version = atlas.atlas_version(slots)
+    display = display_slots(conn, dict(slots))
+    version = atlas.atlas_version([*slots, *display])
     stale = version != atlas.current_version(data_dir) or not atlas.levels_complete(data_dir)
-    await asyncio.to_thread(atlas.build_atlases, data_dir, slots) if stale else None
+    await asyncio.to_thread(atlas.build_atlases, data_dir, slots, display) if stale else None
     return version
 
 

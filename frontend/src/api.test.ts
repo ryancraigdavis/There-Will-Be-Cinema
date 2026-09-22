@@ -50,6 +50,9 @@ describe('api helpers', () => {
     }
     expect(atlasUrl(index, 2)).toBe('/api/atlases/2.webp?v=v9')
     expect(atlasUrl(index, 2, 1024)).toBe('/api/atlases/2-1024.webp?v=v9')
+    const hashed = { ...index, sheets: ['s0', 's1', 's2'] }
+    expect(atlasUrl(hashed, 2)).toBe('/api/atlases/2.webp?v=s2')
+    expect(atlasUrl(hashed, 7)).toBe('/api/atlases/7.webp?v=v9')
   })
 
   it('versions poster urls by image tag', () => {
