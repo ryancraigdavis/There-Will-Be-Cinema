@@ -17,6 +17,7 @@ import { ShelfBoxes, type ShelfGroup } from './ShelfInstances'
 import { Shelving } from './Shelving'
 import { ShelfSigns } from './Signs'
 import { StoreFixtures } from './StoreFixtures'
+import { TapeLod } from './TapeLod'
 import { ShaderWarmup, TextureUploads, WarmAtlases } from './Warmup'
 
 const PHONE_ATLAS_SIZE = 2048
@@ -27,6 +28,7 @@ interface Props {
   plan: StorePlan | null
   site: SiteInfo | null
   atlasIndex: AtlasIndex | null
+  atlasSettled: boolean
   active: boolean
 }
 
@@ -39,7 +41,7 @@ function useMaxAtlasSize(): number {
   }, [gl])
 }
 
-export function StoreScene({ catalog, plan, site, atlasIndex, active }: Props) {
+export function StoreScene({ catalog, plan, site, atlasIndex, atlasSettled, active }: Props) {
   const maxAtlasSize = useMaxAtlasSize()
   const colliders = useMemo(() => sceneColliders(plan), [plan])
   const groups = useMemo<ShelfGroup[]>(
@@ -61,15 +63,11 @@ export function StoreScene({ catalog, plan, site, atlasIndex, active }: Props) {
         {plan && <ShelfSigns signs={plan.signs} />}
       </Suspense>
       {catalog &&
+        atlasSettled &&
         groups.map((group) => (
-          <ShelfBoxes
-            key={group.id}
-            group={group}
-            catalog={catalog}
-            index={atlasIndex}
-            maxAtlasSize={maxAtlasSize}
-          />
+          <ShelfBoxes key={group.id} group={group} catalog={catalog} index={atlasIndex} />
         ))}
+      <TapeLod index={atlasIndex} maxSize={maxAtlasSize} />
       <Suspense fallback={null}>{catalog && <BoxDetail catalog={catalog} site={site} />}</Suspense>
       <PlayerRig colliders={colliders} active={active} />
       <TextureUploads />

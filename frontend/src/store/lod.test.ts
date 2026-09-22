@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AtlasIndex } from '../catalog/types'
-import { availableLevels, levelFor } from './lod'
+import { availableLevels, coverPixels, fullDistance, fullLevel, usableLevels } from './lod'
 
 const index = (levels?: number[]): AtlasIndex => ({
   cell: [128, 192],
@@ -21,31 +21,34 @@ describe('lod', () => {
   })
 
   it.each([
-    ['close on desktop', 1, 4096, 4096],
-    ['mid range', 5, 4096, 2048],
-    ['far away', 20, 4096, 1024],
-    ['close on a phone', 1, 2048, 2048],
-    ['far on a phone', 20, 2048, 1024],
-  ])('%s', (_name, distance, maxSize, expected) => {
-    expect(levelFor(distance, [1024, 2048, 4096], maxSize)).toBe(expected)
-  })
-
-  it('waits until you stop walking before loading the full sheet', () => {
-    const levels = [1024, 2048, 4096]
-    expect(levelFor(1, levels, 4096, { settled: false })).toBe(2048)
-    expect(levelFor(1, levels, 4096, { settled: true })).toBe(4096)
+    ['desktop skips the tier below the warm one', 4096, 2048, [2048, 4096]],
+    ['phones warm 1024 and top out at 2048', 2048, 1024, [1024, 2048]],
+    ['a legacy single-size index', 4096, 4096, [4096]],
+    ['no warm level yet', 4096, null, [1024, 2048, 4096]],
+  ])('%s', (_name, maxSize, warm, expected) => {
+    expect(usableLevels([1024, 2048, 4096], maxSize, warm)).toEqual(expected)
   })
 
   it.each([
-    ['keeps the full sheet a step past the threshold', 3.8, 4096, 4096],
-    ['lets it go further away', 4.5, 4096, 2048],
-    ['does not jump to it from the middle level', 3.8, 2048, 2048],
-  ])('%s', (_name, distance, current, expected) => {
-    expect(levelFor(distance, [1024, 2048, 4096], 4096, { settled: false, current })).toBe(expected)
+    ['the sharp tier above warm', [2048, 4096], 2048, 4096],
+    ['nothing above warm', [4096], 4096, null],
+    ['nothing at all', [], null, null],
+  ])('full level: %s', (_name, usable, warm, expected) => {
+    expect(fullLevel(usable, warm)).toBe(expected)
   })
 
-  it('uses the only level a legacy index has', () => {
-    expect(levelFor(20, [4096], 4096)).toBe(4096)
-    expect(levelFor(1, [], 4096)).toBeNull()
+  it.each([
+    ['1440p at 66°, 2048 warm', 1440, 66, 96, 2.19],
+    ['720p at 66°, 2048 warm', 720, 66, 96, 1.1],
+    ['a 4K window is capped', 2160, 66, 96, 3],
+    ['a tiny window is floored', 300, 66, 96, 1],
+    ['a phone with 1024 warm', 844 * 3, 100, 48, 3],
+  ])('%s', (_name, px, fov, cellPx, expected) => {
+    expect(fullDistance(px, fov, cellPx)).toBeCloseTo(expected, 1)
+  })
+
+  it('knows how tall a cover is at each level', () => {
+    expect(coverPixels(index(), 2048)).toBe(96)
+    expect(coverPixels(index(), 4096)).toBe(192)
   })
 })

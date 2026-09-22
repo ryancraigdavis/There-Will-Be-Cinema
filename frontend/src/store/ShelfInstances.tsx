@@ -1,11 +1,11 @@
-import { type ThreeEvent, useFrame } from '@react-three/fiber'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { ThreeEvent } from '@react-three/fiber'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import {
   BoxGeometry,
   BufferGeometry,
   Color,
   InstancedBufferAttribute,
-  InstancedMesh,
+  type InstancedMesh,
   Matrix4,
   Quaternion,
   SRGBColorSpace,
@@ -16,12 +16,11 @@ import { perf } from '../perf/perf'
 import type { Vec3 } from '../scene/math'
 import { useScene } from '../shell/sceneState'
 import { spineColor } from '../theme/palette'
-import { useAtlasTexture } from './atlasTextures'
 import { cellOrigin, cellSize, groupSlotsByAtlas } from './batches'
 import { createBoxMaterial } from './boxMaterial'
 import { BOX } from './constants'
 import type { Slot } from './geometry'
-import { availableLevels, levelFor, PICK_DISTANCE, STILL_METRES } from './lod'
+import { registerBatch } from './tapeRegistry'
 
 export interface ShelfGroup {
   id: string
@@ -31,10 +30,7 @@ export interface ShelfGroup {
 
 const BASE = new BoxGeometry(BOX.spine, BOX.height, BOX.cover)
 const CLICK_SLOP_PX = 4
-const LOD_INTERVAL_FRAMES = 15
 const UP = new Vector3(0, 1, 0)
-const noRaycast = () => undefined
-const scratch = new Vector3()
 
 function batchGeometry(slots: readonly Slot[], catalog: Catalog, index: AtlasIndex | null) {
   const geometry = new BufferGeometry()
@@ -62,39 +58,6 @@ function slotMatrix(slot: Slot, scale: number): Matrix4 {
   return new Matrix4().compose(position, rotation, new Vector3(scale, scale, scale))
 }
 
-function staggerOf(center: Vec3): number {
-  return Math.abs(Math.round(center[0] * 7 + center[2] * 13)) % LOD_INTERVAL_FRAMES
-}
-
-function useLod(center: Vec3, index: AtlasIndex | null, maxSize: number) {
-  const levels = useMemo(() => availableLevels(index), [index])
-  const [lod, setLod] = useState<{ size: number | null; pickable: boolean }>({
-    size: null,
-    pickable: false,
-  })
-  const frame = useRef(staggerOf(center))
-  const last = useRef(new Vector3(Number.POSITIVE_INFINITY, 0, 0))
-
-  useFrame(({ camera }) => {
-    frame.current = (frame.current + 1) % LOD_INTERVAL_FRAMES
-    if (frame.current !== 0) {
-      return
-    }
-    const settled = camera.position.distanceTo(last.current) < STILL_METRES
-    last.current.copy(camera.position)
-    const distance = camera.position.distanceTo(scratch.set(center[0], center[1], center[2]))
-    const pickable = distance <= PICK_DISTANCE
-    setLod((previous) => {
-      const size = levelFor(distance, levels, maxSize, { settled, current: previous.size })
-      return previous.size === size && previous.pickable === pickable
-        ? previous
-        : { size, pickable }
-    })
-  })
-
-  return lod
-}
-
 function browsing(): boolean {
   const scene = useScene.getState()
   return scene.mode === 'free' && !scene.paused && !scene.selected
@@ -110,29 +73,21 @@ interface BatchProps {
   atlas: number
   index: AtlasIndex | null
   catalog: Catalog
-  size: number | null
-  pickable: boolean
+  center: Vec3
 }
 
-function BoxBatch({ slots, atlas, index, catalog, size, pickable }: BatchProps) {
+function BoxBatch({ slots, atlas, index, catalog, center }: BatchProps) {
   const mesh = useRef<InstancedMesh>(null)
   const hovered = useRef(-1)
-  const texture = useAtlasTexture(index, atlas, size)
   const selected = useScene((state) => state.selected)
   const { material, uniforms } = useMemo(() => createBoxMaterial(cellSize(index)), [index])
   const geometry = useMemo(() => batchGeometry(slots, catalog, index), [slots, catalog, index])
   perf.count('render.BoxBatch')
 
-  useEffect(() => {
-    uniforms.uAtlas.value = texture
-    uniforms.uHasAtlas.value = texture ? 1 : 0
-  }, [texture, uniforms])
-
-  useEffect(() => {
-    if (mesh.current) {
-      mesh.current.raycast = pickable ? InstancedMesh.prototype.raycast : noRaycast
-    }
-  }, [pickable])
+  useEffect(
+    () => registerBatch({ atlas, center, uniforms, mesh: mesh.current }),
+    [atlas, center, uniforms],
+  )
 
   useEffect(
     () => () => {
@@ -205,13 +160,10 @@ interface ShelfBoxesProps {
   group: ShelfGroup
   catalog: Catalog
   index: AtlasIndex | null
-  maxAtlasSize: number
 }
 
-export function ShelfBoxes({ group, catalog, index, maxAtlasSize }: ShelfBoxesProps) {
+export function ShelfBoxes({ group, catalog, index }: ShelfBoxesProps) {
   const batches = useMemo(() => groupSlotsByAtlas(group.slots, index), [group.slots, index])
-  const lod = useLod(group.center, index, maxAtlasSize)
-  useEffect(() => perf.count('lod.change', lod.size || lod.pickable ? 1 : 0), [lod])
   return batches.map((batch) => (
     <BoxBatch
       key={`${group.id}:${batch.atlas}`}
@@ -219,8 +171,7 @@ export function ShelfBoxes({ group, catalog, index, maxAtlasSize }: ShelfBoxesPr
       atlas={batch.atlas}
       index={index}
       catalog={catalog}
-      size={lod.size}
-      pickable={lod.pickable}
+      center={group.center}
     />
   ))
 }

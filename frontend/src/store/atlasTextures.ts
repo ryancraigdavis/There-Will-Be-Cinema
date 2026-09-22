@@ -1,49 +1,51 @@
 import { useEffect, useState } from 'react'
-import { ImageBitmapLoader, SRGBColorSpace, Texture, TextureLoader } from 'three'
+import { SRGBColorSpace, type Texture, TextureLoader } from 'three'
 import { atlasUrl } from '../api'
 import type { AtlasIndex } from '../catalog/types'
 import { levelKey, textureMb, urlLabel } from '../perf/mode'
 import { perf } from '../perf/perf'
+import { decodeInWorker } from './decoder'
 import { bitmapsSupported } from './textureSupport'
-import { queueUpload } from './textureUploads'
+import { cancelUpload, type Priority, queueBanded, queueUpload } from './textureUploads'
 
 interface Entry {
   promise: Promise<Texture>
   texture: Texture | null
   users: number
   timer: ReturnType<typeof setTimeout> | undefined
+  controller: AbortController
+}
+
+export interface ReleaseOptions {
+  immediate?: boolean
 }
 
 const RELEASE_DELAY_MS = 45_000
+const ANISOTROPY = 8
 const entries = new Map<string, Entry>()
-
-let bitmapLoader: ImageBitmapLoader | null = null
 const imageLoader = new TextureLoader()
 
 function decodesOffThread(): boolean {
   return (
     typeof navigator !== 'undefined' &&
+    typeof Worker !== 'undefined' &&
     bitmapsSupported(navigator.userAgent, typeof createImageBitmap === 'function')
   )
 }
 
-async function bitmapTexture(url: string): Promise<Texture> {
-  bitmapLoader ??= new ImageBitmapLoader().setOptions({
-    imageOrientation: 'flipY',
-    premultiplyAlpha: 'none',
-    colorSpaceConversion: 'none',
-  })
-  const texture = new Texture(await bitmapLoader.loadAsync(url))
-  texture.flipY = false
-  return texture
+async function mainThreadTexture(url: string, options: { label: string; priority: Priority }) {
+  const texture = await imageLoader.loadAsync(url)
+  texture.colorSpace = SRGBColorSpace
+  texture.anisotropy = ANISOTROPY
+  texture.needsUpdate = true
+  return queueUpload(texture, options)
 }
 
-async function decode(url: string): Promise<Texture> {
-  const texture = decodesOffThread() ? await bitmapTexture(url) : await imageLoader.loadAsync(url)
-  texture.colorSpace = SRGBColorSpace
-  texture.anisotropy = 8
-  texture.needsUpdate = true
-  return texture
+function load(url: string, priority: Priority, signal: AbortSignal): Promise<Texture> {
+  const options = { label: urlLabel(url), priority, anisotropy: ANISOTROPY }
+  return decodesOffThread()
+    ? decodeInWorker(url, signal).then((decoded) => queueBanded(decoded, options))
+    : mainThreadTexture(url, options)
 }
 
 function sizeOf(texture: Texture | null): { width: number; height: number } {
@@ -58,35 +60,29 @@ function resident(texture: Texture | null, sign: number) {
   perf.adjust('tex.mb', mb)
 }
 
-async function trackedDecode(url: string): Promise<Texture> {
-  const start = performance.now()
-  perf.adjust('decode.inflight', 1)
-  const texture = await decode(url).finally(() => perf.adjust('decode.inflight', -1))
-  const { width, height } = sizeOf(texture)
-  perf.count('decode.count')
-  perf.event(`fetch+decode ${urlLabel(url)}`, performance.now() - start, width * height * 4)
-  return texture
-}
-
 function release(texture: Texture | null) {
   texture?.dispose()
   const image = texture?.image as { close?: () => void } | undefined
   image?.close?.()
 }
 
-function createEntry(url: string): Entry {
+function createEntry(url: string, priority: Priority): Entry {
+  const controller = new AbortController()
   const entry: Entry = {
     promise: Promise.resolve(null as unknown as Texture),
     texture: null,
     users: 0,
     timer: undefined,
+    controller,
   }
-  entry.promise = trackedDecode(url)
-    .then((texture) => queueUpload(texture, urlLabel(url)))
+  perf.adjust('decode.inflight', 1)
+  entry.promise = load(url, priority, controller.signal)
+    .finally(() => perf.adjust('decode.inflight', -1))
     .then(
       (texture) => {
         entry.texture = texture
         resident(texture, 1)
+        perf.count('decode.count')
         return texture
       },
       (error: unknown) => {
@@ -97,7 +93,7 @@ function createEntry(url: string): Entry {
   return entry
 }
 
-function disposeIfUnused(url: string) {
+function dispose(url: string) {
   const entry = entries.get(url)
   if (entry && entry.users === 0) {
     resident(entry.texture, -1)
@@ -106,8 +102,23 @@ function disposeIfUnused(url: string) {
   }
 }
 
-export function acquireTexture(url: string): Promise<Texture> {
-  const entry = entries.get(url) ?? createEntry(url)
+function abandon(url: string, entry: Entry) {
+  entry.controller.abort()
+  cancelUpload(urlLabel(url))
+  entries.delete(url)
+  entry.promise.catch(() => undefined)
+}
+
+const UNUSED: Record<'loading' | 'now' | 'later', (url: string, entry: Entry) => void> = {
+  loading: abandon,
+  now: (url) => dispose(url),
+  later: (url, entry) => {
+    entry.timer = setTimeout(() => dispose(url), RELEASE_DELAY_MS)
+  },
+}
+
+export function acquireTexture(url: string, priority: Priority = 'warm'): Promise<Texture> {
+  const entry = entries.get(url) ?? createEntry(url, priority)
   entries.set(url, entry)
   entry.users += 1
   clearTimeout(entry.timer)
@@ -115,14 +126,20 @@ export function acquireTexture(url: string): Promise<Texture> {
   return entry.promise
 }
 
-export function releaseTexture(url: string): void {
+export function releaseTexture(url: string, { immediate = false }: ReleaseOptions = {}): void {
   const entry = entries.get(url)
   if (!entry) {
     return
   }
   entry.users = Math.max(0, entry.users - 1)
-  entry.timer =
-    entry.users === 0 ? setTimeout(() => disposeIfUnused(url), RELEASE_DELAY_MS) : entry.timer
+  const when = entry.texture === null ? 'loading' : immediate ? 'now' : 'later'
+  if (entry.users === 0) {
+    UNUSED[when](url, entry)
+  }
+}
+
+export function isResident(url: string): boolean {
+  return entries.get(url)?.texture !== null && entries.has(url)
 }
 
 export function useTexture(url: string | null): Texture | null {
@@ -144,10 +161,6 @@ export function useTexture(url: string | null): Texture | null {
   return texture
 }
 
-export function useAtlasTexture(
-  index: AtlasIndex | null,
-  atlas: number,
-  size: number | null,
-): Texture | null {
-  return useTexture(index && size && atlas >= 0 ? atlasUrl(index, atlas, size) : null)
+export function atlasLevelUrl(index: AtlasIndex, atlas: number, size: number): string {
+  return atlasUrl(index, atlas, size)
 }

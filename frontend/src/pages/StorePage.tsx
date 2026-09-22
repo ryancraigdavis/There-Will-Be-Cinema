@@ -64,7 +64,8 @@ function useTapeLink(ready: boolean, known: (id: string) => boolean) {
 export function StorePage({ active }: { active: boolean }) {
   const catalog = readyValue(useCatalog())
   const site = readyValue(useSite())
-  const atlasIndex = readyValue(useAtlasIndex())
+  const atlasResource = useAtlasIndex()
+  const atlasIndex = readyValue(atlasResource)
   const collectionsResource = useCollections()
   const collections =
     collectionsResource.status === 'loading' ? null : (readyValue(collectionsResource) ?? [])
@@ -116,6 +117,7 @@ export function StorePage({ active }: { active: boolean }) {
               plan={plan}
               site={site}
               atlasIndex={atlasIndex}
+              atlasSettled={atlasResource.status !== 'loading'}
               active={active}
             />
           </SceneShell>

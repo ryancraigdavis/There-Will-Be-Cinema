@@ -1,134 +1,178 @@
 import {
-  Box2,
   DataTexture,
   LinearFilter,
   LinearMipmapLinearFilter,
-  type Texture,
+  SRGBColorSpace,
+  Texture,
   Vector2,
 } from 'three'
 import { levelKey } from '../perf/mode'
 import { PERF_MODE, perf, timed } from '../perf/perf'
+import { bandBytes, bandRects, mipChain } from './decodeProtocol'
+import type { Decoded } from './decoder'
 
-export const BAND_ROWS = 512
-export const BANDED_FROM = 2048
+export { BAND_ROWS, BANDED_FROM } from './decodeProtocol'
+
+export type Priority = 'warm' | 'upgrade'
 
 export interface Uploader {
   initTexture: (texture: Texture) => void
   copyTextureToTexture: (
     source: Texture,
     target: Texture,
-    region?: Box2 | null,
+    region?: null,
     position?: Vector2 | null,
   ) => void
   getContext?: () => { finish: () => void }
 }
 
+export interface UploadOptions {
+  label?: string
+  priority?: Priority
+  anisotropy?: number
+}
+
 type Step = (uploader: Uploader) => void
 
 interface Job {
+  id: number
   steps: Step[]
   bytes: number[]
   label: string
   level: string
   total: number
+  priority: Priority
   done: () => void
+  drop: () => void
 }
 
 const queue: Job[] = []
+let nextId = 1
+
 const SETTLE: Record<typeof PERF_MODE, (uploader: Uploader) => void> = {
   off: () => undefined,
   on: () => undefined,
   sync: (uploader) => uploader.getContext?.().finish(),
 }
 
-export function bandOffsets(height: number, rows = BAND_ROWS): number[] {
-  return Array.from({ length: Math.ceil(height / rows) }, (_, i) => i * rows)
+const RUNNABLE: Record<Priority, (moving: boolean) => boolean> = {
+  warm: () => true,
+  upgrade: (moving) => !moving,
 }
 
-export function bandBytes(width: number, height: number): number[] {
-  return [0, ...bandOffsets(height).map((y) => width * Math.min(BAND_ROWS, height - y) * 4)]
+export function bandOffsets(height: number, rows?: number): number[] {
+  return bandRects(1, height, rows).map((band) => band.y)
 }
 
-export function bandedSteps(
-  source: Texture,
-  target: Texture,
-  width: number,
-  height: number,
-): Step[] {
-  const offsets = bandOffsets(height)
-  const last = offsets.length - 1
+function bandTexture(band: ImageBitmap): Texture {
+  const texture = new Texture(band)
+  texture.flipY = false
+  texture.colorSpace = SRGBColorSpace
+  return texture
+}
+
+export function bandedSteps(bands: readonly ImageBitmap[], target: Texture): Step[] {
+  const last = bands.length - 1
+  const offsets = bandOffsets(bands.reduce((sum, band) => sum + band.height, 0))
   return [
     (uploader) => uploader.initTexture(target),
-    ...offsets.map(
-      (y, i): Step =>
+    ...bands.map(
+      (band, i): Step =>
         (uploader) => {
           target.generateMipmaps = i === last
-          const region = new Box2(
-            new Vector2(0, y),
-            new Vector2(width, Math.min(height, y + BAND_ROWS)),
-          )
-          uploader.copyTextureToTexture(source, target, region, new Vector2(0, y))
+          uploader.copyTextureToTexture(bandTexture(band), target, null, new Vector2(0, offsets[i]))
+          band.close()
         },
     ),
   ]
 }
 
-function bandTarget(source: Texture, width: number, height: number): Texture {
+export function bandTarget(width: number, height: number, anisotropy: number): Texture {
   const target = new DataTexture(null, width, height)
   target.source.dataReady = false
-  target.colorSpace = source.colorSpace
-  target.anisotropy = source.anisotropy
+  target.mipmaps = mipChain(width, height).map((level) => ({
+    ...level,
+    data: null,
+  })) as unknown as Texture['mipmaps']
+  target.colorSpace = SRGBColorSpace
+  target.anisotropy = anisotropy
   target.flipY = false
   target.magFilter = LinearFilter
   target.minFilter = LinearMipmapLinearFilter
-  target.generateMipmaps = true
+  target.generateMipmaps = false
   target.needsUpdate = true
   return target
 }
 
-function bandable(image: unknown): image is ImageBitmap {
-  return (
-    typeof ImageBitmap !== 'undefined' &&
-    image instanceof ImageBitmap &&
-    image.height >= BANDED_FROM
-  )
+function enqueue(job: Job) {
+  const at = job.priority === 'warm' ? queue.findIndex((other) => other.priority === 'upgrade') : -1
+  queue.splice(at === -1 ? queue.length : at, 0, job)
 }
 
-function sizeOf(image: unknown): { width: number; height: number } {
-  const { width = 0, height = 0 } = (image ?? {}) as { width?: number; height?: number }
-  return { width, height }
+function job(
+  steps: Step[],
+  bytes: number[],
+  width: number,
+  { label = '', priority = 'warm' }: UploadOptions,
+  finish: { done: () => void; drop: () => void },
+): Job {
+  return {
+    id: nextId++,
+    steps,
+    bytes,
+    label,
+    level: levelKey(width),
+    total: steps.length,
+    priority,
+    ...finish,
+  }
 }
 
-export function queueUpload(texture: Texture, label = texture.name): Promise<Texture> {
-  const image: unknown = texture.image
-  const banded = bandable(image)
-  const { width, height } = sizeOf(image)
-  const target = banded ? bandTarget(texture, width, height) : texture
-  const steps = banded
-    ? bandedSteps(texture, target, width, height)
-    : [(uploader: Uploader) => uploader.initTexture(texture)]
-  return new Promise((resolve) => {
-    queue.push({
-      steps,
-      bytes: banded ? bandBytes(width, height) : [width * height * 4],
-      label,
-      level: levelKey(width),
-      total: steps.length,
-      done: () => {
-        if (banded) {
-          image.close()
-        }
-        resolve(target)
-      },
-    })
+export function queueUpload(texture: Texture, options: UploadOptions = {}): Promise<Texture> {
+  const { width = 0, height = 0 } = (texture.image ?? {}) as { width?: number; height?: number }
+  return new Promise((resolve, reject) => {
+    const steps = [(uploader: Uploader) => uploader.initTexture(texture)]
+    enqueue(
+      job(steps, [width * height * 4], width, options, {
+        done: () => resolve(texture),
+        drop: () => reject(new Error('upload cancelled')),
+      }),
+    )
   })
 }
 
-function runStep(job: Job, step: Step, uploader: Uploader) {
-  const bytes = job.bytes.shift() ?? 0
-  const label = `upload ${job.label} ${job.total - job.steps.length}/${job.total}`
+export function queueBanded(decoded: Decoded, options: UploadOptions = {}): Promise<Texture> {
+  const { width, height, bands } = decoded
+  const target = bandTarget(width, height, options.anisotropy ?? 8)
+  return new Promise((resolve, reject) => {
+    enqueue(
+      job(bandedSteps(bands, target), [0, ...bandBytes(width, height)], width, options, {
+        done: () => resolve(target),
+        drop: () => {
+          for (const band of bands) {
+            band.close()
+          }
+          reject(new Error('upload cancelled'))
+        },
+      }),
+    )
+  })
+}
+
+export function cancelUpload(label: string): boolean {
+  const index = queue.findIndex((queued) => queued.label === label)
+  const dropped = queue.splice(index, index === -1 ? 0 : 1)
+  for (const queued of dropped) {
+    queued.drop()
+  }
+  return dropped.length > 0
+}
+
+function runStep(queued: Job, step: Step, uploader: Uploader) {
+  const bytes = queued.bytes.shift() ?? 0
+  const label = `upload ${queued.label} ${queued.total - queued.steps.length}/${queued.total}`
   perf.count('upload.steps')
-  perf.count(`upload.steps.${job.level}`)
+  perf.count(`upload.steps.${queued.level}`)
   perf.count('upload.bytes', bytes)
   timed(
     label,
@@ -140,15 +184,15 @@ function runStep(job: Job, step: Step, uploader: Uploader) {
   )
 }
 
-export function uploadStep(uploader: Uploader): boolean {
-  const job = queue[0]
-  const step = job?.steps.shift()
-  if (job && step) {
-    runStep(job, step, uploader)
+export function uploadStep(uploader: Uploader, moving = false): boolean {
+  const queued = queue.find((candidate) => RUNNABLE[candidate.priority](moving))
+  const step = queued?.steps.shift()
+  if (queued && step) {
+    runStep(queued, step, uploader)
   }
-  if (job && job.steps.length === 0) {
-    queue.shift()
-    job.done()
+  if (queued && queued.steps.length === 0) {
+    queue.splice(queue.indexOf(queued), 1)
+    queued.done()
   }
   perf.gauge('upload.queue', queue.length)
   return step !== undefined

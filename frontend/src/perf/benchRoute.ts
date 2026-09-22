@@ -13,6 +13,7 @@ export const ROUTE: readonly BenchSegment[] = [
   { label: 'into-aisle', frames: 150, keys: ['KeyW'] },
   { label: 'brief-pause', frames: 35 },
   { label: 'walk-on', frames: 90, keys: ['KeyW'] },
+  { label: 'to-shelf', frames: 20, keys: ['KeyD'] },
   { label: 'dwell-shelf', frames: 120 },
   { label: 'select', frames: 60, action: 'select' },
   { label: 'deselect-walk', frames: 100, keys: ['KeyW'] },
